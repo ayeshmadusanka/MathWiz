@@ -163,18 +163,18 @@
         localStorage.setItem('bulkY', bulkY);
 
         // Determine regression type
-        const regressionType = document.getElementById('regressionType').checked ? 'quadratic' : 'linear';
-        let coefficients, equation, mse;
+        const regressionType = document.getElementById('regressionType').checked ? 'polynomial' : 'linear';
+        let coefficients, equation, mse, bestDegree;
 
         if (regressionType === 'linear') {
             ({ coefficients, equation, mse } = calculateLinearRegression(xValues, yValues));
         } else {
-            ({ coefficients, equation, mse } = calculateQuadraticRegression(xValues, yValues));
+            ({ coefficients, equation, mse, degree: bestDegree } = findBestPolynomialFit(xValues, yValues));
         }
 
         // Display regression equation using MathJax
         document.getElementById('equation').innerHTML = `Regression Equation: \\( y = ${equation} \\)`;
-        document.getElementById('mse').innerHTML = `Mean Squared Error: ${mse.toFixed(2)}`;
+        document.getElementById('mse').innerHTML = `Mean Squared Error: ${mse.toFixed(6)}${regressionType === 'polynomial' ? ` (Degree ${bestDegree})` : ''}`;
         MathJax.typeset();
 
         // Prepare data for Chart.js
@@ -188,7 +188,13 @@
         if (regressionType === 'linear') {
             regressionData = sortedX.map(x => ({ x, y: coefficients[0] + coefficients[1] * x }));
         } else {
-            regressionData = sortedX.map(x => ({ x, y: coefficients[0] + coefficients[1] * x + coefficients[2] * x * x }));
+            regressionData = sortedX.map(x => {
+                let y = 0;
+                for (let d = 0; d <= bestDegree; d++) {
+                    y += coefficients[d] * Math.pow(x, d);
+                }
+                return { x, y };
+            });
         }
 
         const data = {
@@ -204,7 +210,7 @@
                     type: 'scatter',
                 },
                 {
-                    label: regressionType === 'linear' ? 'Linear Fit' : 'Polynomial Fit',
+                    label: regressionType === 'linear' ? 'Linear Fit' : `Polynomial Fit (Degree ${bestDegree})`,
                     data: regressionData,
                     borderColor: 'rgba(0, 0, 0, 1)',
                     borderWidth: 2,
@@ -271,29 +277,70 @@
         return { coefficients: [intercept, slope], equation: `${intercept.toFixed(2)} + ${slope.toFixed(2)}x`, mse };
     }
 
-    function calculateQuadraticRegression(x, y) {
+    function fitPolynomial(x, y, degree) {
         const n = x.length;
-        const sumX = x.reduce((a, b) => a + b, 0);
-        const sumY = y.reduce((a, b) => a + b, 0);
-        const sumX2 = x.map(xi => xi * xi).reduce((a, b) => a + b, 0);
-        const sumX3 = x.map(xi => xi * xi * xi).reduce((a, b) => a + b, 0);
-        const sumX4 = x.map(xi => xi * xi * xi * xi).reduce((a, b) => a + b, 0);
-        const sumXY = x.map((xi, i) => xi * y[i]).reduce((a, b) => a + b, 0);
-        const sumX2Y = x.map((xi, i) => xi * xi * y[i]).reduce((a, b) => a + b, 0);
+        const m = degree + 1;
+        const matrix = [];
+        const results = [];
 
-        const matrix = [
-            [n, sumX, sumX2],
-            [sumX, sumX2, sumX3],
-            [sumX2, sumX3, sumX4]
-        ];
-
-        const results = [sumY, sumXY, sumX2Y];
+        for (let i = 0; i < m; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < m; j++) {
+                matrix[i][j] = x.map(xi => Math.pow(xi, i + j)).reduce((a, b) => a + b, 0);
+            }
+            results[i] = x.map((xi, idx) => Math.pow(xi, i) * y[idx]).reduce((a, b) => a + b, 0);
+        }
 
         const coefficients = solveMatrix(matrix, results);
-        const predictedY = x.map(xi => coefficients[0] + coefficients[1] * xi + coefficients[2] * xi * xi);
+        const predictedY = x.map(xi => {
+            let sum = 0;
+            for (let d = 0; d <= degree; d++) {
+                sum += coefficients[d] * Math.pow(xi, d);
+            }
+            return sum;
+        });
         const mse = predictedY.reduce((acc, pred, i) => acc + Math.pow(pred - y[i], 2), 0) / n;
 
-        return { coefficients, equation: `${coefficients[0].toFixed(2)} + ${coefficients[1].toFixed(2)}x + ${coefficients[2].toFixed(2)}x^2`, mse };
+        return { coefficients, mse };
+    }
+
+    function findBestPolynomialFit(x, y) {
+        const n = x.length;
+        const maxDegree = Math.min(10, Math.max(1, n - 3));
+        let best = { degree: 1, coefficients: [], mse: Infinity, equation: '' };
+
+        for (let d = 1; d <= maxDegree; d++) {
+            const { coefficients, mse } = fitPolynomial(x, y, d);
+            const k = d + 1;
+            if (n - k - 1 <= 0) break;
+            const aicc = n * Math.log(mse) + 2 * k + (2 * k * (k + 1)) / (n - k - 1);
+            if (d === 1 || aicc < best.aicc) {
+                best = { degree: d, coefficients, mse, aicc, equation: '' };
+            }
+        }
+
+        best.equation = buildEquation(best.coefficients, best.degree);
+        return best;
+    }
+
+    function buildEquation(coeffs, degree) {
+        let terms = [];
+        for (let d = degree; d >= 0; d--) {
+            const c = coeffs[d];
+            if (Math.abs(c) < 1e-10) continue;
+            const sign = c < 0 ? '-' : (terms.length > 0 ? '+' : '');
+            const absC = Math.abs(c);
+            let term = '';
+            if (d === 0) {
+                term = `${absC.toFixed(4)}`;
+            } else if (d === 1) {
+                term = `${absC.toFixed(4)}x`;
+            } else {
+                term = `${absC.toFixed(4)}x^{${d}}`;
+            }
+            terms.push(sign + term);
+        }
+        return terms.join(' ') || '0';
     }
 
     function solveMatrix(matrix, results) {
