@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.0.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Lora', serif;
@@ -59,6 +60,11 @@
         .table-bordered, .table-bordered th, .table-bordered td {
             border: 2px solid black !important;
         }
+        .chart-container {
+            position: relative;
+            margin-top: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +97,10 @@
             <input type="submit" class="btn btn-success btn-block" value="Calculate">
         </div>
     </form>
+
+    <div class="chart-container">
+        <canvas id="functionChart"></canvas>
+    </div>
 
     <div class="table-container">
         <div class="table-responsive">
@@ -139,6 +149,7 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
 
     let previousX = xOld;
     let rootFound = false;
+    const iterPoints = [{x: xOld, y: f.evaluate({x: xOld})}];
 
     // Iterate using Newton-Raphson method
     for (let i = 1; i <= numberIterations; i++) {
@@ -165,6 +176,8 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
         row.insertCell(2).innerText = fValue.toFixed(8);
         row.insertCell(3).innerText = error.toFixed(8);
 
+        iterPoints.push({x: xNew, y: f.evaluate({x: xNew})});
+
         // Check if the function value is close enough to zero
         if (Math.abs(fValue) < tolerance) {
             rootFound = true;
@@ -184,7 +197,129 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
         row.insertCell(0).colSpan = 4;
         row.insertCell(0).innerText = 'Root not found within the given number of iterations.';
     }
+
+    plotFunction(userFunction, iterPoints, rootFound, xOld);
 });
+
+document.getElementById('function').addEventListener('input', function() {
+    const funcStr = this.value;
+    if (funcStr.trim()) {
+        try {
+            math.compile(funcStr);
+            plotFunction(funcStr, [], false, null);
+        } catch(e) {}
+    }
+});
+
+let chartInstance = null;
+
+function plotFunction(funcStr, iterPoints, rootFound, finalX) {
+    const ctx = document.getElementById('functionChart').getContext('2d');
+    const container = document.querySelector('.chart-container');
+    container.style.display = 'block';
+
+    const rootX = rootFound ? finalX : null;
+    const f = math.compile(funcStr);
+
+    let range = 10;
+    if (rootX !== null || (iterPoints && iterPoints.length > 0)) {
+        const allXs = iterPoints.map(p => p.x);
+        if (rootX !== null) allXs.push(rootX);
+        const maxAbs = Math.max(...allXs.map(Math.abs), 1);
+        range = Math.max(10, Math.ceil(maxAbs * 1.5));
+    }
+    const xMin = -range;
+    const xMax = range;
+    const yMin = -range;
+    const yMax = range;
+
+    const curvePoints = [];
+    const step = (xMax - xMin) / 200;
+    for (let x = xMin; x <= xMax; x += step) {
+        try {
+            const y = f.evaluate({x});
+            if (isFinite(y)) curvePoints.push({x, y});
+        } catch(e) {}
+    }
+
+    if (chartInstance) chartInstance.destroy();
+
+    const datasets = [{
+        label: `f(x) = ${funcStr}`,
+        data: curvePoints,
+        borderColor: 'black',
+        backgroundColor: 'black',
+        pointRadius: 0,
+        showLine: true,
+        tension: 0.3,
+        borderWidth: 2,
+        fill: false
+    }];
+
+    if (iterPoints && iterPoints.length > 0) {
+        datasets.push({
+            label: 'Iteration points',
+            data: iterPoints,
+            borderColor: '#555',
+            backgroundColor: '#555',
+            pointRadius: 6,
+            pointStyle: 'circle',
+            showLine: false
+        });
+    }
+
+    if (rootX !== null) {
+        datasets.push({
+            label: `Root: x = ${rootX.toFixed(6)}`,
+            data: [{x: rootX, y: 0}],
+            borderColor: 'black',
+            backgroundColor: 'black',
+            pointRadius: 8,
+            pointStyle: 'cross',
+            borderWidth: 3,
+            showLine: false
+        });
+    }
+
+    try {
+        chartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: {datasets},
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                aspectRatio: 16/9,
+                maintainAspectRatio: true,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: {display: true, text: 'x', align: 'end'},
+                        grid: {color: 'rgba(0,0,0,0.1)'},
+                        min: xMin,
+                        max: xMax,
+                        position: 'center'
+                    },
+                    y: {
+                        title: {display: false},
+                        grid: {color: 'rgba(0,0,0,0.1)'},
+                        min: yMin,
+                        max: yMax,
+                        position: 'center'
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {family: 'Lora'}
+                        }
+                    }
+                }
+            }
+        });
+    } catch(e) {
+        console.error('Chart error:', e);
+    }
+}
 </script>
 
 

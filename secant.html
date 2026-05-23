@@ -6,6 +6,7 @@
     <title>Secant Method Iteration Table</title>
     <!-- Bootstrap 5 CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -65,6 +66,11 @@
         .table-bordered, .table-bordered th, .table-bordered td {
             border: 2px solid black !important;
         }
+        .chart-container {
+            position: relative;
+            margin-top: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -101,6 +107,10 @@
             <input type="submit" class="btn btn-success mt-2" value="Calculate">
         </div>
     </form>
+
+    <div class="chart-container">
+        <canvas id="functionChart"></canvas>
+    </div>
 
     <div class="table-container">
         <div class="table-responsive">
@@ -141,6 +151,10 @@
 
         let previous_x = x1;
         let rootFound = false;
+        let rootX = null;
+        const iterPoints = [];
+        iterPoints.push({x: x0, y: math.evaluate(userFunction, {x: x0})});
+        iterPoints.push({x: x1, y: math.evaluate(userFunction, {x: x1})});
 
         function evaluateFunction(x) {
             return math.evaluate(userFunction, { x: x });
@@ -156,6 +170,7 @@
             }
 
             const x_new = x1 - f_x1 * ((x1 - x0) / (f_x1 - f_x0));
+            iterPoints.push({x: x_new, y: evaluateFunction(x_new)});
             const error = Math.abs(x_new - previous_x);
 
             tableBody.innerHTML += `
@@ -169,6 +184,7 @@
 
             if (Math.abs(f_x1) < tolerance) {
                 rootFound = true;
+                rootX = x_new;
                 tableBody.innerHTML += `<tr><td colspan='4'>Root found: ${x_new.toFixed(8)}</td></tr>`;
                 break;
             }
@@ -181,7 +197,129 @@
         if (!rootFound) {
             tableBody.innerHTML += "<tr><td colspan='4'>Root not found within the given number of iterations.</td></tr>";
         }
+
+        plotFunction(userFunction, iterPoints, rootFound, rootX);
     });
+
+document.getElementById('function').addEventListener('input', function() {
+    const funcStr = this.value;
+    if (funcStr.trim()) {
+        try {
+            math.compile(funcStr);
+            plotFunction(funcStr, [], false, null);
+        } catch(e) {}
+    }
+});
+
+let chartInstance = null;
+
+function plotFunction(funcStr, iterPoints, rootFound, finalX) {
+    const ctx = document.getElementById('functionChart').getContext('2d');
+    const container = document.querySelector('.chart-container');
+    container.style.display = 'block';
+
+    const rootX = rootFound ? finalX : null;
+    const f = math.compile(funcStr);
+
+    let range = 10;
+    if (rootX !== null || (iterPoints && iterPoints.length > 0)) {
+        const allXs = iterPoints.map(p => p.x);
+        if (rootX !== null) allXs.push(rootX);
+        const maxAbs = Math.max(...allXs.map(Math.abs), 1);
+        range = Math.max(10, Math.ceil(maxAbs * 1.5));
+    }
+    const xMin = -range;
+    const xMax = range;
+    const yMin = -range;
+    const yMax = range;
+
+    const curvePoints = [];
+    const step = (xMax - xMin) / 200;
+    for (let x = xMin; x <= xMax; x += step) {
+        try {
+            const y = f.evaluate({x});
+            if (isFinite(y)) curvePoints.push({x, y});
+        } catch(e) {}
+    }
+
+    if (chartInstance) chartInstance.destroy();
+
+    const datasets = [{
+        label: `f(x) = ${funcStr}`,
+        data: curvePoints,
+        borderColor: 'black',
+        backgroundColor: 'black',
+        pointRadius: 0,
+        showLine: true,
+        tension: 0.3,
+        borderWidth: 2,
+        fill: false
+    }];
+
+    if (iterPoints && iterPoints.length > 0) {
+        datasets.push({
+            label: 'Iteration points',
+            data: iterPoints,
+            borderColor: '#555',
+            backgroundColor: '#555',
+            pointRadius: 6,
+            pointStyle: 'circle',
+            showLine: false
+        });
+    }
+
+    if (rootX !== null) {
+        datasets.push({
+            label: `Root: x = ${rootX.toFixed(6)}`,
+            data: [{x: rootX, y: 0}],
+            borderColor: 'black',
+            backgroundColor: 'black',
+            pointRadius: 8,
+            pointStyle: 'cross',
+            borderWidth: 3,
+            showLine: false
+        });
+    }
+
+    try {
+        chartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: {datasets},
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                aspectRatio: 16/9,
+                maintainAspectRatio: true,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: {display: true, text: 'x', align: 'end'},
+                        grid: {color: 'rgba(0,0,0,0.1)'},
+                        min: xMin,
+                        max: xMax,
+                        position: 'center'
+                    },
+                    y: {
+                        title: {display: false},
+                        grid: {color: 'rgba(0,0,0,0.1)'},
+                        min: yMin,
+                        max: yMax,
+                        position: 'center'
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {family: 'Lora'}
+                        }
+                    }
+                }
+            }
+        });
+    } catch(e) {
+        console.error('Chart error:', e);
+    }
+}
 </script>
 
 
