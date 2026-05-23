@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bisection Method Iteration Table</title>
+
+    <!-- Include Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Lora', serif;
+            background-color: #f5f5ef;
+            color: #000;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #000;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            color: #000;
+        }
+
+        .form-control {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 1px solid #ccc;
+        }
+
+        .form-control:focus {
+            background-color: #f5f5ef;
+            border-color: #000;
+        }
+
+        .btn-success {
+            background-color: #000;
+            border-color: #000;
+        }
+
+        .btn-success:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+
+        .table-dark {
+            background-color: #f5f5ef;
+            color: #000;
+        }
+
+        .table-dark th {
+            background-color: #f5f5ef;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #e8e8d8;
+        }
+
+        .table-responsive {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+
+
+<h1>Bisection Method Iteration Table</h1>
+
+<!-- Form for user inputs -->
+<div class="container">
+    <form id="bisectionForm" class="row">
+        <div class="col-12 col-md-6 col-lg-3">
+            <label for="function" class="form-label">Enter f(x): </label>
+            <input type="text" id="function" name="function" class="form-control" value="f(x)" required>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <label for="lower_bound" class="form-label">Lower Bound (a): </label>
+            <input type="number" id="lower_bound" name="lower_bound" class="form-control" step="any" value="0" required>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <label for="upper_bound" class="form-label">Upper Bound (b): </label>
+            <input type="number" id="upper_bound" name="upper_bound" class="form-control" step="any" value="2" required>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <label for="iterations" class="form-label">Number of Iterations: </label>
+            <input type="number" id="iterations" name="iterations" class="form-control" value="10" required>
+        </div>
+        <div class="col-12 text-center mt-4">
+            <input type="submit" value="Calculate" class="btn btn-success">
+        </div>
+    </form>
+</div>
+
+<!-- Table for displaying results -->
+<div class="container table-responsive">
+    <table class="table table-striped table-hover table-dark table-bordered">
+        <thead>
+            <tr>
+                <th>Iteration</th>
+                <th>a</th>
+                <th>b</th>
+                <th>m</th>
+                <th>f(m)</th>
+                <th>Error</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+</div>
+
+<!-- Include Bootstrap and JavaScript -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>
+
+<script>
+    document.getElementById('bisectionForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const userFunction = document.getElementById('function').value;
+        let a = parseFloat(document.getElementById('lower_bound').value);
+        let b = parseFloat(document.getElementById('upper_bound').value);
+        const iterations = parseInt(document.getElementById('iterations').value);
+        const tolerance = 0.00000001;
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+
+        let previousMidpoint = (a + b) / 2;
+        let rootFound = false;
+
+        function evaluateFunction(x) {
+            return math.evaluate(userFunction, { x: x });
+        }
+
+        for (let i = 1; i <= iterations; i++) {
+            const m = (a + b) / 2;
+            const f_m = evaluateFunction(m);
+            const f_a = evaluateFunction(a);
+            const error = Math.abs(m - previousMidpoint);
+
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${i}</td>
+                    <td>${a.toFixed(8)}</td>
+                    <td>${b.toFixed(8)}</td>
+                    <td>${m.toFixed(8)}</td>
+                    <td>${f_m.toFixed(8)}</td>
+                    <td>${error.toFixed(8)}</td>
+                </tr>
+            `;
+
+            if (Math.abs(f_m) < tolerance) {
+                rootFound = true;
+                tableBody.innerHTML += `<tr><td colspan='6'>Root found: ${m.toFixed(8)}</td></tr>`;
+                break;
+            }
+
+            if (f_a * f_m < 0) {
+                b = m;
+            } else {
+                a = m;
+            }
+
+            previousMidpoint = m;
+        }
+
+        if (!rootFound) {
+            tableBody.innerHTML += "<tr><td colspan='6'>Root not found within the given number of iterations.</td></tr>";
+        }
+    });
+</script>
+
+
+
+</body>
+</html>

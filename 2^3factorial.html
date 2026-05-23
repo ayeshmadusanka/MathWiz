@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2³ Factorial Design</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    body {
+        background-color: #f5f5ef;
+        color: black;
+        font-family: 'Lora', serif;
+    }
+        .container {
+            margin-top: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h1, .section h2 {
+            color: black;
+        }
+        .section h2 {
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            background-color: #f5f5ef;
+        }
+        .table {
+            background-color: #f5f5ef;
+        }
+        table th, table td {
+            border: 2px solid black !important;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        table thead th {
+            background-color: #f5f5ef;
+            color: black;
+        }
+        table tbody tr {
+            background-color: #f5f5ef;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #f5f5ef;
+        }
+        table tbody td:first-child {
+            background-color: #f5f5ef;
+            color: black;
+        }
+        table tbody td:not(:first-child) {
+            background-color: #f5f5ef;
+            color: black;
+        }
+        .btn-group {
+            margin-bottom: 20px;
+        }
+        .btn-group button {
+            margin-right: 5px;
+        }
+        .btn-primary {
+            background-color: black;
+            border-color: black;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        .btn-secondary {
+            background-color: #ccc;
+            border-color: #ccc;
+            color: black;
+        }
+        .btn-secondary:hover {
+            background-color: #aaa;
+            border-color: #aaa;
+        }
+        .btn-success {
+            background-color: black;
+            border-color: black;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        .btn-info {
+            background-color: black;
+            border-color: black;
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        .btn-danger {
+            background-color: black;
+            border-color: black;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        input[type="number"] {
+            background-color: #f5f5ef;
+            color: black;
+            border: 1px solid #f5f5ef;
+        }
+        #results h3, #anovaResults h3, #additionalResults h3 {
+            color: black;
+        }
+        .btn-group button {
+            color: white;
+        }
+        .btn-group .btn-secondary {
+            color: black;
+        }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+
+
+<div class="container">
+    <div class="section">
+        <h1 class="text-center">2³ Factorial Design</h1>
+    </div>
+
+    <div class="section">
+        <h2>Enter Data</h2>
+        <p>Please enter your data in the table below. Each cell should contain a numeric value representing an observation for that combination of factors and replicates.</p>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" id="addReplicate">Add Replicate</button>
+            <button type="button" class="btn btn-secondary" id="removeReplicate">Remove Replicate</button>
+            <button type="button" class="btn btn-success" id="calculate">Calculate ANOVA</button>
+        </div>
+        <form id="factorialForm">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable">
+                    <thead id="tableHead">
+                        <tr id="factorHeader">
+                            <th>Combinations</th>
+                            <!-- Replicates will be added here -->
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- Default rows for factors -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="results" class="mt-3"></div>
+            <div id="anovaResults" class="mt-3"></div>
+            <div id="additionalResults" class="mt-3"></div> <!-- New Div for Additional Results -->
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jStat Library for Statistical Calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.5/jstat.min.js"></script>
+<script>
+    let factorCounter = 3; // Start with 3 factors (A, B, C)
+    let replicateCount = 3; // Default number of replicates
+
+    // Function to update table headers based on replicate count
+    function updateFactorLabels() {
+        const tableHead = document.getElementById('tableHead');
+        const headerRow = tableHead.querySelector('tr');
+        // Remove old replicate headers
+        Array.from(headerRow.querySelectorAll('th')).slice(1).forEach(th => headerRow.removeChild(th));
+
+        // Add new replicate headers
+        for (let i = 1; i <= replicateCount; i++) {
+            const newHeaderCell = document.createElement('th');
+            newHeaderCell.textContent = `Replicate ${i}`;
+            headerRow.appendChild(newHeaderCell);
+        }
+    }
+
+    // Function to generate all combinations of factors
+    function getCombinations(numFactors) {
+        const combos = [];
+        const factorNames = Array.from({ length: numFactors }, (_, i) => String.fromCharCode(65 + i)); // Generates A, B, C, etc.
+
+        // Generate combinations using binary representation
+        for (let i = 0; i < (1 << numFactors); i++) {
+            let combo = '';
+            for (let j = 0; j < numFactors; j++) {
+                if (i & (1 << j)) {
+                    combo += factorNames[j];
+                }
+            }
+            combos.push(combo || '(1)'); // Handle case with no factors selected
+        }
+
+        return combos;
+    }
+
+    // Function to update table body based on current number of replicates
+    function updateTableBody() {
+        const tableBody = document.getElementById('dataTableBody');
+        const combinations = getCombinations(factorCounter);
+        const numReplicates = replicateCount;
+
+        // Clear existing rows
+        tableBody.innerHTML = '';
+
+        combinations.forEach(combo => {
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `<td>${combo}</td>` + 
+                Array.from({ length: numReplicates }, () => `<td><input type="number" class="form-control" required></td>`).join('');
+            tableBody.appendChild(newRow);
+        });
+    }
+
+    // Function to collect data from the table
+    function collectTableData() {
+        const tableBody = document.getElementById('dataTableBody');
+        const tableData = [];
+
+        Array.from(tableBody.rows).forEach((row) => {
+            const rowData = [];
+            Array.from(row.cells).slice(1).forEach((cell) => {
+                const value = parseFloat(cell.querySelector('input').value);
+                rowData.push(isNaN(value) ? null : value);
+            });
+            tableData.push(rowData);
+        });
+        return tableData;
+    }
+
+    // Function to calculate Totals, ANOVA, Main Effects, and Regression Model
+    function calculateTotalsAndANOVA() {
+        const tableData = collectTableData();
+        const numRows = tableData.length;
+        const numReplicates = replicateCount;
+        const numFactors = factorCounter;
+
+        // Check for any null values
+        for (let i = 0; i < numRows; i++) {
+            for (let j = 0; j < numReplicates; j++) {
+                if (tableData[i][j] === null) {
+                    alert(`Missing value at row ${i + 1}, replicate ${j + 1}. Please enter all observations.`);
+                    return;
+                }
+            }
+        }
+
+        let rowTotals = Array(numRows).fill(0);
+        let columnTotals = Array(numReplicates).fill(0);
+        let grandTotal = 0;
+        let totalObservations = numRows * numReplicates;
+
+        // Calculate row totals, column totals, and grand total
+        tableData.forEach((rowData, rowIndex) => {
+            rowTotals[rowIndex] = rowData.reduce((sum, value) => sum + value, 0);
+            rowData.forEach((value, colIndex) => {
+                grandTotal += value;
+                columnTotals[colIndex] += value;
+            });
+        });
+
+        const grandMean = grandTotal / totalObservations;
+
+        // Extract row totals for each combination
+        const combinationNames = getCombinations(numFactors);
+        const combinationsMap = {};
+        combinationNames.forEach((name, index) => {
+            combinationsMap[name] = rowTotals[index];
+        });
+
+        const totalNone = combinationsMap['(1)'] || 0;
+        const totalA = combinationsMap['A'] || 0;
+        const totalB = combinationsMap['B'] || 0;
+        const totalC = combinationsMap['C'] || 0;
+        const totalAB = combinationsMap['AB'] || 0;
+        const totalAC = combinationsMap['AC'] || 0;
+        const totalBC = combinationsMap['BC'] || 0;
+        const totalABC = combinationsMap['ABC'] || 0;
+
+        // Calculate SS Total
+        let ssTotal = tableData.flat().reduce((sum, value) => sum + Math.pow(value - grandMean, 2), 0);
+
+        // Calculate Sum of Squares using provided contrast formulas
+        const contrastA = (totalA + totalAB + totalAC + totalABC) - (totalNone + totalB + totalC + totalBC);
+        const contrastB = (totalB + totalAB + totalBC + totalABC) - (totalNone + totalA + totalC + totalAC);
+        const contrastC = (totalC + totalAC + totalBC + totalABC) - (totalNone + totalA + totalB + totalAB);
+        const contrastAB = (totalABC + totalAB + totalC + totalNone) - (totalA + totalB + totalBC + totalAC);
+        const contrastAC = (totalABC + totalAC + totalB + totalNone) - (totalA + totalC + totalBC + totalAB);
+        const contrastBC = (totalABC + totalBC + totalA + totalNone) - (totalB + totalC + totalAC + totalAB);
+        const contrastABC = (totalABC + totalA + totalB + totalC) - (totalAB + totalBC + totalAC + totalNone);
+
+        // Calculate Sum of Squares for each effect
+        const ssA = Math.pow(contrastA, 2) / (8 * numReplicates);
+        const ssB = Math.pow(contrastB, 2) / (8 * numReplicates);
+        const ssC = Math.pow(contrastC, 2) / (8 * numReplicates);
+        const ssAB = Math.pow(contrastAB, 2) / (8 * numReplicates);
+        const ssAC = Math.pow(contrastAC, 2) / (8 * numReplicates);
+        const ssBC = Math.pow(contrastBC, 2) / (8 * numReplicates);
+        const ssABC = Math.pow(contrastABC, 2) / (8 * numReplicates);
+
+        // Calculate SS Error
+        const ssError = ssTotal - (ssA + ssB + ssC + ssAB + ssAC + ssBC + ssABC);
+
+        // Degrees of Freedom
+        const dfTotal = totalObservations - 1;
+        const dfA = 1;
+        const dfB = 1;
+        const dfC = 1;
+        const dfAB = 1;
+        const dfAC = 1;
+        const dfBC = 1;
+        const dfABC = 1;
+        const dfError = dfTotal - (dfA + dfB + dfC + dfAB + dfAC + dfBC + dfABC);
+
+        // Display Table Totals
+        let totalTableHtml = '<h3>Table Totals:</h3><table class="table table-bordered"><thead><tr><th>Factor</th>';
+        for (let i = 1; i <= numReplicates; i++) {
+            totalTableHtml += `<th>Replicate ${i}</th>`;
+        }
+        totalTableHtml += '<th>Row Total</th></tr></thead><tbody>';
+
+        tableData.forEach((rowData, rowIndex) => {
+            totalTableHtml += `<tr><td>${combinationNames[rowIndex]}</td>`;
+            rowData.forEach(value => {
+                totalTableHtml += `<td>${value.toFixed(4)}</td>`;
+            });
+            totalTableHtml += `<td>${rowTotals[rowIndex].toFixed(4)}</td></tr>`;
+        });
+
+        totalTableHtml += `<tr><td><b>Column Totals</b></td>`;
+        columnTotals.forEach(colTotal => {
+            totalTableHtml += `<td>${colTotal.toFixed(4)}</td>`;
+        });
+        totalTableHtml += `<td>${grandTotal.toFixed(4)}</td></tr></tbody></table>`;
+        document.getElementById('results').innerHTML = totalTableHtml;
+
+        // ANOVA Results
+        const anovaTableHtml = `
+        <h3>ANOVA Results:</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Sum of Squares (SS)</th>
+                    <th>Degrees of Freedom (DF)</th>
+                    <th>Mean Square (MS)</th>
+                    <th>F-Statistic</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>A</td>
+                    <td>${ssA.toFixed(4)}</td>
+                    <td>${dfA}</td>
+                    <td>${(ssA / dfA).toFixed(4)}</td>
+                    <td>${( (ssA / dfA) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>B</td>
+                    <td>${ssB.toFixed(4)}</td>
+                    <td>${dfB}</td>
+                    <td>${(ssB / dfB).toFixed(4)}</td>
+                    <td>${( (ssB / dfB) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>C</td>
+                    <td>${ssC.toFixed(4)}</td>
+                    <td>${dfC}</td>
+                    <td>${(ssC / dfC).toFixed(4)}</td>
+                    <td>${( (ssC / dfC) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>AB</td>
+                    <td>${ssAB.toFixed(4)}</td>
+                    <td>${dfAB}</td>
+                    <td>${(ssAB / dfAB).toFixed(4)}</td>
+                    <td>${( (ssAB / dfAB) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>AC</td>
+                    <td>${ssAC.toFixed(4)}</td>
+                    <td>${dfAC}</td>
+                    <td>${(ssAC / dfAC).toFixed(4)}</td>
+                    <td>${( (ssAC / dfAC) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>BC</td>
+                    <td>${ssBC.toFixed(4)}</td>
+                    <td>${dfBC}</td>
+                    <td>${(ssBC / dfBC).toFixed(4)}</td>
+                    <td>${( (ssBC / dfBC) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>ABC</td>
+                    <td>${ssABC.toFixed(4)}</td>
+                    <td>${dfABC}</td>
+                    <td>${(ssABC / dfABC).toFixed(4)}</td>
+                    <td>${( (ssABC / dfABC) / (ssError / dfError) ).toFixed(4)}</td>
+                </tr>
+                <tr>
+                    <td>Error</td>
+                    <td>${ssError.toFixed(4)}</td>
+                    <td>${dfError}</td>
+                    <td>${(ssError / dfError).toFixed(4)}</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>Total</td>
+                    <td>${ssTotal.toFixed(4)}</td>
+                    <td>${dfTotal}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>`;
+
+        document.getElementById('anovaResults').innerHTML = anovaTableHtml;
+
+        // Main Effects and Regression Model Calculations
+
+        // Calculate means for each combination
+        let meanNone = totalNone / numReplicates;
+        let meanA = totalA / numReplicates;
+        let meanB = totalB / numReplicates;
+        let meanC = totalC / numReplicates;
+        let meanAB = totalAB / numReplicates;
+        let meanAC = totalAC / numReplicates;
+        let meanBC = totalBC / numReplicates;
+        let meanABC = totalABC / numReplicates;
+
+        // Calculate regression coefficients using provided contrast formulas
+        let beta0 = grandMean;
+        let betaA_coef = (meanA + meanAB + meanAC + meanABC - meanNone - meanB - meanC - meanBC) / 8;
+        let betaB_coef = (meanB + meanAB + meanBC + meanABC - meanNone - meanA - meanC - meanAC) / 8;
+        let betaC_coef = (meanC + meanAC + meanBC + meanABC - meanNone - meanA - meanB - meanAB) / 8;
+
+        let betaAB = (meanABC + meanAB + meanC + meanNone - meanA - meanB - meanBC - meanAC) / 8;
+        let betaAC = (meanABC + meanAC + meanB + meanNone - meanA - meanC - meanBC - meanAB) / 8;
+        let betaBC = (meanABC + meanBC + meanA + meanNone - meanB - meanC - meanAC - meanAB) / 8;
+        let betaABC = (meanABC + meanA + meanB + meanC - meanAB - meanBC - meanAC - meanNone) / 8;
+
+        // Calculate Main Effects
+        let mainEffectA = 2 * betaA_coef;
+        let mainEffectB = 2 * betaB_coef;
+        let mainEffectC = 2 * betaC_coef;
+        let interactionEffectAB = 2 * betaAB;
+        let interactionEffectAC = 2 * betaAC;
+        let interactionEffectBC = 2 * betaBC;
+        let interactionEffectABC = 2 * betaABC;
+
+        // Construct Regression Model Equation
+        let regressionModel = `y = ${beta0.toFixed(5)} + (${betaA_coef.toFixed(5)})A + (${betaB_coef.toFixed(5)})B + (${betaC_coef.toFixed(5)})C + (${betaAB.toFixed(5)})AB + (${betaAC.toFixed(5)})AC + (${betaBC.toFixed(5)})BC + (${betaABC.toFixed(5)})ABC`;
+
+        // Display Main Effects and Regression Model
+        let additionalResultsHtml = `
+        <h3>Main Effects:</h3>
+        <ul>
+            <li><strong>Main Effect A:</strong> ${mainEffectA.toFixed(6)}</li>
+            <li><strong>Main Effect B:</strong> ${mainEffectB.toFixed(6)}</li>
+            <li><strong>Main Effect C:</strong> ${mainEffectC.toFixed(6)}</li>
+        </ul>
+        <h3>Interaction Effects:</h3>
+        <ul>
+            <li><strong>Interaction AB:</strong> ${interactionEffectAB.toFixed(6)}</li>
+            <li><strong>Interaction AC:</strong> ${interactionEffectAC.toFixed(6)}</li>
+            <li><strong>Interaction BC:</strong> ${interactionEffectBC.toFixed(6)}</li>
+            <li><strong>Interaction ABC:</strong> ${interactionEffectABC.toFixed(6)}</li>
+        </ul>
+        <h3>Regression Model:</h3>
+        <p>${regressionModel}</p>
+        `;
+
+        document.getElementById('additionalResults').innerHTML = additionalResultsHtml;
+    }
+
+    // Event Listener to Add a Replicate
+    document.getElementById('addReplicate').addEventListener('click', () => {
+        replicateCount++;
+        updateFactorLabels();
+        updateTableBody();
+    });
+
+    // Event Listener to Remove a Replicate
+    document.getElementById('removeReplicate').addEventListener('click', () => {
+        if (replicateCount <= 1) return; // Ensure at least one replicate remains
+        replicateCount--;
+        updateFactorLabels();
+        updateTableBody();
+    });
+
+    // Event Listener to Calculate ANOVA and Additional Results
+    document.getElementById('calculate').addEventListener('click', () => {
+        // Validate the form before calculation
+        const inputs = document.querySelectorAll('#dataTableBody input');
+        let valid = true;
+        inputs.forEach(input => {
+            if (input.value === '') {
+                valid = false;
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (!valid) {
+            alert('Please fill in all the observation fields.');
+            return;
+        }
+
+        calculateTotalsAndANOVA();
+    });
+
+    // Initialize the table on page load
+    updateFactorLabels();
+    updateTableBody();
+</script>
+
+
+
+</body>
+</html>

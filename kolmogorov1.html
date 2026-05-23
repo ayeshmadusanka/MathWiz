@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolmogorov-Smirnov Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    body {
+        background-color: #f5f5ef;
+        color: black;
+        font-family: 'Lora', serif;
+    }
+        .container {
+            margin-top: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h1, .section h2 {
+            color: black;
+        }
+        .section h2 {
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .table {
+            color: black;
+            background-color: #f5f5ef;
+            border-color: black;
+        }
+        .table th {
+            text-align: center;
+            border: 1px solid black;
+            background-color: #f5f5ef;
+            color: black;
+            font-weight: bold;
+        }
+        .table td {
+            text-align: center;
+            border: 1px solid black;
+            background-color: #f5f5ef;
+            color: black;
+        }
+        .table tbody tr td {
+            background-color: #f5f5ef;
+        }
+        .btn-primary, .btn-success {
+            background-color: black;
+            border-color: black;
+        }
+        .btn-primary:hover, .btn-success:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        input[type="number"], input[type="text"], .form-control {
+            background-color: #f5f5ef;
+            color: black;
+            border-color: black;
+        }
+        .form-select {
+            background-color: #f5f5ef;
+            color: black;
+            border-color: black;
+        }
+        input[type="number"]:focus, input[type="text"]:focus, .form-select:focus {
+            border-color: black;
+            box-shadow: none;
+        }
+        #results h3 {
+            color: black;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: black;
+        }
+        .alert {
+            margin-top: 15px;
+        }
+        
+        .highlight {
+            background-color: #ffeb3b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+
+
+<div class="container">
+    <div class="section">
+        <h1 class="text-center">Kolmogorov-Smirnov Test</h1>
+    </div>
+
+    <div class="d-flex justify-content-center mb-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="testTypeSwitch" style="width: 50px; height: 25px; background-color: #ccc; border-color: black; cursor: pointer;">
+            <label class="form-check-label fw-bold ms-2" for="testTypeSwitch" id="testTypeLabel">One-Sample Test</label>
+        </div>
+    </div>
+
+    <!-- K-S Test Section -->
+    <div class="section">
+        <h2 id="sectionTitle">One-Sample Kolmogorov-Smirnov Test</h2>
+        <form id="ks-test-form">
+            <p>Enter your data (comma separated):</p>
+            <div id="ksError" class="alert alert-danger d-none" role="alert"></div>
+            <div class="mb-3">
+                <input type="text" class="form-control" id="dataInput" placeholder="e.g. 1, 2, 3, 4, 5">
+            </div>
+            <div id="secondDataGroup" class="mb-3 d-none">
+                <label for="dataInput2" class="form-label">Second Sample (comma separated):</label>
+                <input type="text" class="form-control" id="dataInput2" placeholder="e.g. 6, 7, 8, 9, 10">
+            </div>
+            <div id="distributionGroup">
+                <div class="mb-3">
+                    <label for="distribution" class="form-label">Select Distribution:</label>
+                    <select class="form-select" id="distribution">
+                        <option value="normal">Normal</option>
+                        <option value="uniform">Uniform</option>
+                        <option value="exponential">Exponential</option>
+                    </select>
+                </div>
+                <div id="normalParams" class="distribution-params mb-3">
+                    <label for="mean" class="form-label">Mean:</label>
+                    <input type="text" class="form-control" id="mean" placeholder="e.g. 0 or 1/2">
+                    <label for="stdDev" class="form-label">Standard Deviation:</label>
+                    <input type="text" class="form-control" id="stdDev" placeholder="e.g. 1 or 3/4">
+                </div>
+                <div id="uniformParams" class="distribution-params mb-3 d-none">
+                    <label for="a" class="form-label">A:</label>
+                    <input type="text" class="form-control" id="a" placeholder="e.g. 0 or 1/3">
+                    <label for="b" class="form-label">B:</label>
+                    <input type="text" class="form-control" id="b" placeholder="e.g. 1 or 2/5">
+                </div>
+                <div id="exponentialParams" class="distribution-params mb-3 d-none">
+                    <label for="lambda" class="form-label">Lambda:</label>
+                    <input type="text" class="form-control" id="lambda" placeholder="e.g. 1 or 5/6">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success">Calculate</button>
+        </form>
+        <div id="ksLoading" class="d-none text-center mt-3">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div id="result" class="mt-3"></div>
+        <div id="result-table" class="mt-3" style="display: none;">
+            <h4>Results Table:</h4>
+            <table class="table">
+                <thead id="table-head">
+                    <tr>
+                        <th>N</th>
+                        <th>X</th>
+                        <th>S<sub>n</sub>(x)</th>
+                        <th>F<sub>0</sub>(x)</th>
+                        <th>S<sub>n</sub>(x - ε)</th>
+                        <th>|S<sub>n</sub>(x) - F<sub>0</sub>(x)|</th>
+                        <th>|S<sub>n</sub>(x - ε) - F<sub>0</sub>(x)|</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const switchEl = document.getElementById('testTypeSwitch');
+    const testTypeLabel = document.getElementById('testTypeLabel');
+    const sectionTitle = document.getElementById('sectionTitle');
+    const secondDataGroup = document.getElementById('secondDataGroup');
+    const distributionGroup = document.getElementById('distributionGroup');
+    const tableHead = document.getElementById('table-head');
+
+    switchEl.addEventListener('change', function() {
+        const isTwoSample = this.checked;
+        if (isTwoSample) {
+            testTypeLabel.textContent = 'Two-Sample Test';
+            sectionTitle.textContent = 'Two-Sample Kolmogorov-Smirnov Test';
+            secondDataGroup.classList.remove('d-none');
+            distributionGroup.classList.add('d-none');
+            tableHead.innerHTML = `<tr>
+                <th>N</th>
+                <th>X</th>
+                <th>S<sub>1</sub>(x)</th>
+                <th>S<sub>2</sub>(x)</th>
+                <th>|S<sub>1</sub>(x) - S<sub>2</sub>(x)|</th>
+            </tr>`;
+        } else {
+            testTypeLabel.textContent = 'One-Sample Test';
+            sectionTitle.textContent = 'One-Sample Kolmogorov-Smirnov Test';
+            secondDataGroup.classList.add('d-none');
+            distributionGroup.classList.remove('d-none');
+            tableHead.innerHTML = `<tr>
+                <th>N</th>
+                <th>X</th>
+                <th>S<sub>n</sub>(x)</th>
+                <th>F<sub>0</sub>(x)</th>
+                <th>S<sub>n</sub>(x - ε)</th>
+                <th>|S<sub>n</sub>(x) - F<sub>0</sub>(x)|</th>
+                <th>|S<sub>n</sub>(x - ε) - F<sub>0</sub>(x)|</th>
+            </tr>`;
+        }
+    });
+
+    // Toggle distribution parameters based on selection
+    document.getElementById('distribution').addEventListener('change', function() {
+        const distribution = this.value;
+        document.querySelectorAll('.distribution-params').forEach(paramDiv => {
+            paramDiv.classList.add('d-none');
+        });
+        if (distribution === 'normal') {
+            document.getElementById('normalParams').classList.remove('d-none');
+        } else if (distribution === 'uniform') {
+            document.getElementById('uniformParams').classList.remove('d-none');
+        } else if (distribution === 'exponential') {
+            document.getElementById('exponentialParams').classList.remove('d-none');
+        }
+    });
+
+    document.getElementById('ks-test-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const isTwoSample = switchEl.checked;
+        const dataInput = document.getElementById('dataInput').value;
+        const data = dataInput.split(',').map(Number);
+
+        if (isTwoSample) {
+            const dataInput2 = document.getElementById('dataInput2').value;
+            const data2 = dataInput2.split(',').map(Number);
+            const results = kolmogorovSmirnovTwoSample(data, data2);
+            document.getElementById('result').innerHTML = ` 
+                <h4>Test Result:</h4>
+                <p><strong>D<sub>n</sub>: ${results.Dn.toFixed(4)}</strong></p>
+            `;
+            populateTwoSampleTable(results.tableData);
+        } else {
+            const distribution = document.getElementById('distribution').value;
+            let distributionParams = {};
+            if (distribution === 'normal') {
+                distributionParams.mean = parseFloat(document.getElementById('mean').value);
+                distributionParams.stdDev = parseFloat(document.getElementById('stdDev').value);
+            } else if (distribution === 'uniform') {
+                distributionParams.a = parseFloat(document.getElementById('a').value);
+                distributionParams.b = parseFloat(document.getElementById('b').value);
+            } else if (distribution === 'exponential') {
+                distributionParams.lambda = parseFloat(document.getElementById('lambda').value);
+            }
+            const results = kolmogorovSmirnovTest(data, distribution, distributionParams);
+            document.getElementById('result').innerHTML = ` 
+                <h4>Test Result:</h4>
+                <p><strong>D<sub>n</sub>: ${results.Dn.toFixed(4)}</strong></p>
+            `;
+            populateTable(results.tableData);
+        }
+    });
+
+    function kolmogorovSmirnovTest(data, distribution, params) {
+        const n = data.length;
+        const tableData = [];
+        let maxAbsDiff = 0;
+
+        data.sort((a, b) => a - b);
+
+        for (let i = 0; i < n; i++) {
+            const x = data[i];
+            const Sn_x = (i + 1) / n;
+            const F0_x = getF0(x, distribution, params);
+            const Sn_x_epsilon = Sn_x - (1 / n);
+            const absDiff1 = Math.abs(Sn_x - F0_x);
+            const absDiff2 = Math.abs(Sn_x_epsilon - F0_x);
+            maxAbsDiff = Math.max(maxAbsDiff, absDiff1, absDiff2);
+
+            tableData.push({
+                x: x,
+                Sn_x: Sn_x,
+                F0_x: F0_x,
+                Sn_x_epsilon: Sn_x_epsilon,
+                absDiff1: absDiff1,
+                absDiff2: absDiff2
+            });
+        }
+
+        return { Dn: maxAbsDiff, tableData: tableData };
+    }
+
+    function kolmogorovSmirnovTwoSample(data1, data2) {
+        const combined = [...new Set([...data1, ...data2])].sort((a, b) => a - b);
+        const n1 = data1.length;
+        const n2 = data2.length;
+        const tableData = [];
+        let maxAbsDiff = 0;
+
+        data1.sort((a, b) => a - b);
+        data2.sort((a, b) => a - b);
+
+        for (let i = 0; i < combined.length; i++) {
+            const x = combined[i];
+            const ecdf1 = data1.filter(v => v <= x).length / n1;
+            const ecdf2 = data2.filter(v => v <= x).length / n2;
+            const diff = Math.abs(ecdf1 - ecdf2);
+            maxAbsDiff = Math.max(maxAbsDiff, diff);
+
+            tableData.push({
+                x: x,
+                Sn1: ecdf1,
+                Sn2: ecdf2,
+                diff: diff
+            });
+        }
+
+        return { Dn: maxAbsDiff, tableData: tableData };
+    }
+
+    function erf(x) {
+        const a1 =  0.254829592;
+        const a2 = -0.284496736;
+        const a3 =  1.421413741;
+        const a4 = -1.453152027;
+        const a5 =  1.061405429;
+        const p  =  0.3275911;
+        const sign = x < 0 ? -1 : 1;
+        x = Math.abs(x);
+        const t = 1.0 / (1.0 + p * x);
+        const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return sign * y;
+    }
+
+    function getF0(x, distribution, params) {
+        if (distribution === 'normal') {
+            return 0.5 * (1 + erf((x - params.mean) / (params.stdDev * Math.sqrt(2))));
+        } else if (distribution === 'uniform') {
+            const { a, b } = params;
+            if (x < a) return 0;
+            if (x > b) return 1;
+            return (x - a) / (b - a);
+        } else if (distribution === 'exponential') {
+            const { lambda } = params;
+            return 1 - Math.exp(-lambda * x);
+        }
+        return 0;
+    }
+
+    function populateTable(tableData) {
+        const tableBody = document.getElementById('table-body');
+        tableBody.innerHTML = '';
+
+        let maxAbsDiff1 = -Infinity;
+        let maxAbsDiff2 = -Infinity;
+
+        tableData.forEach(data => {
+            maxAbsDiff1 = Math.max(maxAbsDiff1, data.absDiff1);
+            maxAbsDiff2 = Math.max(maxAbsDiff2, data.absDiff2);
+        });
+
+        tableData.forEach((data, index) => {
+            const isMaxDiff1 = data.absDiff1 === maxAbsDiff1;
+            const isMaxDiff2 = data.absDiff2 === maxAbsDiff2;
+            const row = `<tr>
+                <td>${index + 1}</td>
+                <td>${data.x}</td>
+                <td>${data.Sn_x.toFixed(4)}</td>
+                <td>${data.F0_x.toFixed(4)}</td>
+                <td>${data.Sn_x_epsilon.toFixed(4)}</td>
+                <td class="${isMaxDiff1 ? 'highlight' : ''}">${data.absDiff1.toFixed(4)}</td>
+                <td class="${isMaxDiff2 ? 'highlight' : ''}">${data.absDiff2.toFixed(4)}</td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+        document.getElementById('result-table').style.display = 'block';
+    }
+
+    function populateTwoSampleTable(tableData) {
+        const tableBody = document.getElementById('table-body');
+        tableBody.innerHTML = '';
+
+        let maxDiff = -Infinity;
+        tableData.forEach(data => {
+            maxDiff = Math.max(maxDiff, data.diff);
+        });
+
+        tableData.forEach((data, index) => {
+            const isMax = data.diff === maxDiff;
+            const row = `<tr>
+                <td>${index + 1}</td>
+                <td>${data.x}</td>
+                <td>${data.Sn1.toFixed(4)}</td>
+                <td>${data.Sn2.toFixed(4)}</td>
+                <td class="${isMax ? 'highlight' : ''}">${data.diff.toFixed(4)}</td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+        document.getElementById('result-table').style.display = 'block';
+    }
+</script>
+
+
+
+</body>
+</html>

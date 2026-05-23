@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wilcoxon Signed Rank Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    body {
+        background-color: #f5f5ef;
+        color: black;
+        font-family: 'Lora', serif;
+    }
+        .container {
+            margin-top: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h1, .section h2 {
+            color: black;
+        }
+        .section h2 {
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .table {
+            color: black;
+            background-color: #f5f5ef;
+            border-color: black;
+        }
+        .table th, .table td {
+            text-align: center;
+            border: 1px solid black;
+        }
+        .table thead th {
+            background-color: #f5f5ef;
+            color: black;
+            font-weight: bold;
+        }
+        .table tbody tr td {
+            background-color: #f5f5ef;
+            color: black;
+        }
+        .table tbody tr:nth-child(even) td {
+            background-color: #f5f5ef;
+        }
+        .table tbody tr:hover td {
+            background-color: #e8e8dc;
+        }
+        .btn-primary, .btn-success {
+            background-color: black;
+            border-color: black;
+        }
+        .btn-primary:hover, .btn-success:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        input[type="number"], input[type="text"] {
+            background-color: #f5f5ef;
+            color: black;
+            border-color: black;
+        }
+        #results h3, #anovaResults h3, #additionalResults h3, #yatesTable h3 {
+            color: black;
+        }
+        .btn-group button {
+            color: #fff;
+        }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+            }
+        }
+        .yates-table {
+            background-color: #f5f5ef;
+            color: black;
+            border-color: black;
+        }
+        .yates-table th, .yates-table td {
+            border-color: black;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: black;
+        }
+        .alert {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+
+
+<div class="container">
+    <div class="section">
+        <h1 class="text-center">Wilcoxon Signed Rank Test</h1>
+    </div>
+
+    <!-- One-Sample Test Section -->
+    <div class="section">
+        <h2>One-Sample Test</h2>
+        <p>Enter your data for the one-sample Wilcoxon signed rank test:</p>
+        <div id="oneSampleError" class="alert alert-danger d-none" role="alert"></div>
+        <div class="mb-3">
+            <label for="oneSampleData" class="form-label">Data (comma separated):</label>
+            <input type="text" class="form-control" id="oneSampleData" placeholder="e.g. 5, 6, 7, 8" aria-describedby="oneSampleDataHelp">
+            
+        </div>
+        <div class="mb-3">
+            <label for="oneSampleMedian" class="form-label">Hypothesized Median:</label>
+            <input type="number" class="form-control" id="oneSampleMedian" placeholder="e.g. 6" aria-describedby="oneSampleMedianHelp">
+          
+        </div>
+        <button type="button" class="btn btn-success" id="calculateOneSample">Calculate One-Sample Test</button>
+        <div id="oneSampleLoading" class="d-none text-center mt-3">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div id="oneSampleResults" class="mt-3"></div>
+    </div>
+
+    <!-- Two-Sample Test Section -->
+    <div class="section">
+        <h2>Two-Sample Test</h2>
+        <p>Enter your data for the two-sample Wilcoxon signed rank test:</p>
+        <div id="twoSampleError" class="alert alert-danger d-none" role="alert"></div>
+        <div class="mb-3">
+            <label for="firstSampleData" class="form-label">Sample 1 (comma separated):</label>
+            <input type="text" class="form-control" id="firstSampleData" placeholder="e.g. 5, 6, 7" aria-describedby="firstSampleDataHelp">
+          
+        </div>
+        <div class="mb-3">
+            <label for="secondSampleData" class="form-label">Sample 2 (comma separated):</label>
+            <input type="text" class="form-control" id="secondSampleData" placeholder="e.g. 6, 5, 8" aria-describedby="secondSampleDataHelp">
+      
+        </div>
+        <button type="button" class="btn btn-success" id="calculateTwoSample">Calculate Two-Sample Test</button>
+        <div id="twoSampleLoading" class="d-none text-center mt-3">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div id="twoSampleResults" class="mt-3"></div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jStat Library for Statistical Calculations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.5/jstat.min.js"></script>
+<script>
+    /**
+     * Parses a comma-separated string into an array of numbers.
+     * @param {string} input - The comma-separated string.
+     * @returns {number[]} - Array of numbers.
+     */
+    function parseInputData(input) {
+        return input.split(',').map(num => parseFloat(num.trim())).filter(num => !isNaN(num));
+    }
+
+    /**
+     * Displays an error message in the specified container.
+     * @param {string} containerId - The ID of the container to display the error.
+     * @param {string} message - The error message to display.
+     */
+    function showError(containerId, message) {
+        const errorDiv = document.getElementById(containerId);
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('d-none');
+    }
+
+    /**
+     * Hides the error message in the specified container.
+     * @param {string} containerId - The ID of the container to hide the error.
+     */
+    function hideError(containerId) {
+        const errorDiv = document.getElementById(containerId);
+        errorDiv.classList.add('d-none');
+        errorDiv.textContent = '';
+    }
+
+    /**
+     * Performs the One-Sample Wilcoxon Signed Rank Test.
+     * @param {number[]} data - The sample data.
+     * @param {number} hypothesizedMedian - The median to test against.
+     * @returns {object} - The test results including W+, W-, T, n, ranks, and p-value.
+     */
+    function performOneSampleTest(data, hypothesizedMedian) {
+        const n = data.length;
+        const ranks = [];
+        let WPlus = 0;
+        let WMinus = 0;
+
+        // Calculate differences and filter out zeros
+        const nonZeroDifferences = data.map((value, index) => {
+            const difference = value - hypothesizedMedian;
+            return difference !== 0 ? { index: index + 1, Xi: value, difference } : null;
+        }).filter(item => item !== null);
+
+        // Sort by absolute difference
+        nonZeroDifferences.sort((a, b) => Math.abs(a.difference) - Math.abs(b.difference));
+
+        // Assign initial ranks (1, 2, 3, ...) before handling ties
+        nonZeroDifferences.forEach((item, idx) => {
+            item.initialRank = idx + 1;
+        });
+
+        // Group by absolute difference to identify ties
+        const groupedByAbsDiff = {};
+        nonZeroDifferences.forEach(item => {
+            const absDiff = Math.abs(item.difference);
+            if (!groupedByAbsDiff[absDiff]) {
+                groupedByAbsDiff[absDiff] = [];
+            }
+            groupedByAbsDiff[absDiff].push(item);
+        });
+
+        // Assign mean ranks to tied groups
+        Object.values(groupedByAbsDiff).forEach(group => {
+            if (group.length > 1) {
+                const sumRanks = group.reduce((sum, item) => sum + item.initialRank, 0);
+                const meanRank = sumRanks / group.length;
+                group.forEach(item => {
+                    item.rank = meanRank;
+                });
+            } else {
+                group[0].rank = group[0].initialRank;
+            }
+        });
+
+        // Assign signed ranks and calculate W+ and W-
+        nonZeroDifferences.forEach(item => {
+            item.sign = item.difference > 0 ? 1 : -1;
+            item.absoluteDifference = Math.abs(item.difference);
+            item.signedRank = item.sign * item.rank;
+            if (item.sign === 1) {
+                WPlus += item.rank;
+            } else {
+                WMinus += item.rank;
+            }
+            ranks.push(item);
+        });
+
+        // Test Statistic T is the smaller of W+ and W-
+        const T = Math.min(WPlus, WMinus);
+
+        // Calculate p-value using normal approximation
+        const pValue = calculatePValue(T, nonZeroDifferences.length);
+
+        return { WPlus, WMinus, T, n: nonZeroDifferences.length, ranks, pValue };
+    }
+
+    /**
+     * Performs the Two-Sample Wilcoxon Signed Rank Test.
+     * @param {number[]} sample1 - The first sample data.
+     * @param {number[]} sample2 - The second sample data.
+     * @returns {object} - The test results including W+, W-, T, n, ranks, and p-value.
+     */
+    function performTwoSampleTest(sample1, sample2) {
+        const n = sample1.length;
+        const ranks = [];
+        let WPlus = 0;
+        let WMinus = 0;
+
+        // Calculate differences and filter out zeros
+        const differences = sample1.map((value, index) => {
+            const difference = value - sample2[index];
+            return difference !== 0 ? { index: index + 1, sample1: value, sample2: sample2[index], difference } : null;
+        }).filter(item => item !== null);
+
+        // Sort by absolute difference
+        differences.sort((a, b) => Math.abs(a.difference) - Math.abs(b.difference));
+
+        // Assign initial ranks (1, 2, 3, ...) before handling ties
+        differences.forEach((item, idx) => {
+            item.initialRank = idx + 1;
+        });
+
+        // Group by absolute difference to identify ties
+        const groupedByAbsDiff = {};
+        differences.forEach(item => {
+            const absDiff = Math.abs(item.difference);
+            if (!groupedByAbsDiff[absDiff]) {
+                groupedByAbsDiff[absDiff] = [];
+            }
+            groupedByAbsDiff[absDiff].push(item);
+        });
+
+        // Assign mean ranks to tied groups
+        Object.values(groupedByAbsDiff).forEach(group => {
+            if (group.length > 1) {
+                const sumRanks = group.reduce((sum, item) => sum + item.initialRank, 0);
+                const meanRank = sumRanks / group.length;
+                group.forEach(item => {
+                    item.rank = meanRank;
+                });
+            } else {
+                group[0].rank = group[0].initialRank;
+            }
+        });
+
+        // Assign signed ranks and calculate W+ and W-
+        differences.forEach(item => {
+            item.sign = item.difference > 0 ? 1 : -1;
+            item.absoluteDifference = Math.abs(item.difference);
+            item.signedRank = item.sign * item.rank;
+            if (item.sign === 1) {
+                WPlus += item.rank;
+            } else {
+                WMinus += item.rank;
+            }
+            ranks.push(item);
+        });
+
+        // Test Statistic T is the smaller of W+ and W-
+        const T = Math.min(WPlus, WMinus);
+
+        // Calculate p-value using normal approximation
+        const pValue = calculatePValue(T, differences.length);
+
+        return { WPlus, WMinus, T, n: differences.length, ranks, pValue };
+    }
+
+    /**
+     * Calculates the p-value using normal approximation.
+     * @param {number} T - The test statistic.
+     * @param {number} n - The number of non-zero differences.
+     * @returns {number} - The p-value.
+     */
+    function calculatePValue(T, n) {
+        const mu = n * (n + 1) / 4;
+        const sigma = Math.sqrt(n * (n + 1) * (2 * n + 1) / 24);
+        const z = (T - mu + 0.5) / sigma; // Continuity correction
+        const pValue = 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1));
+        return pValue;
+    }
+
+    /**
+     * Generates an HTML table for the One-Sample Test results.
+     * @param {object} result - The test results.
+     * @param {number[]} originalData - The original data including zero differences.
+     * @param {number} hypothesizedMedian - The median used in the test.
+     * @returns {string} - The HTML string for the results table.
+     */
+    function generateOneSampleTable(result, originalData, hypothesizedMedian) {
+        let table = `
+            <h3>Results:</h3>
+            <p><strong>W⁺ (Sum of Positive Ranks):</strong> ${result.WPlus.toFixed(2)}</p>
+            <p><strong>W⁻ (Sum of Negative Ranks):</strong> ${result.WMinus.toFixed(2)}</p>
+            <p><strong>Test Statistic (W):</strong> ${result.T.toFixed(2)}</p>
+            <p><strong>Sample Size (n):</strong> ${result.n}</p>
+            
+            <h4>Rank Details:</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>Xi</th>
+                            <th>Xi - M</th>
+                            <th>Sign</th>
+                            <th>|Xi - M|</th>
+                            <th>Rank</th>
+                            <th>Signed Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        originalData.forEach((value, index) => {
+            const difference = value - hypothesizedMedian;
+            if (difference === 0) {
+                table += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${value}</td>
+                        <td>${difference.toFixed(2)}</td>
+                        <td>0</td>
+                        <td>0.00</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                `;
+            } else {
+                const rankInfo = result.ranks.find(r => r.index === index + 1);
+                table += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${value}</td>
+                        <td>${difference.toFixed(2)}</td>
+                        <td>${rankInfo.sign}</td>
+                        <td>${rankInfo.absoluteDifference.toFixed(2)}</td>
+                        <td>${rankInfo.rank.toFixed(2)}</td>
+                        <td>${rankInfo.signedRank.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        table += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        return table;
+    }
+
+    /**
+     * Generates an HTML table for the Two-Sample Test results.
+     * @param {object} result - The test results.
+     * @param {number[]} sample1 - The first sample data.
+     * @param {number[]} sample2 - The second sample data.
+     * @returns {string} - The HTML string for the results table.
+     */
+    function generateTwoSampleTable(result, sample1, sample2) {
+        let table = `
+            <h3>Results:</h3>
+            <p><strong>W⁺ (Sum of Positive Ranks):</strong> ${result.WPlus.toFixed(2)}</p>
+            <p><strong>W⁻ (Sum of Negative Ranks):</strong> ${result.WMinus.toFixed(2)}</p>
+            <p><strong>Test Statistic (W):</strong> ${result.T.toFixed(2)}</p>
+            <p><strong>Sample Size (n):</strong> ${result.n}</p>
+            
+            <h4>Rank Difference Details:</h4>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>Xi</th>
+                            <th>Yi</th>
+                            <th>Di = Xi - Yi </th>
+                            <th>Sign</th>
+                            <th>|Di|</th>
+                            <th>Rank</th>
+                            <th>Signed Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        sample1.forEach((value, index) => {
+            const difference = value - sample2[index];
+            if (difference === 0) {
+                table += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${value}</td>
+                        <td>${sample2[index]}</td>
+                        <td>${difference.toFixed(2)}</td>
+                        <td>0</td>
+                        <td>0.00</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                `;
+            } else {
+                const rankInfo = result.ranks.find(r => r.index === index + 1);
+                table += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${value}</td>
+                        <td>${sample2[index]}</td>
+                        <td>${difference.toFixed(2)}</td>
+                        <td>${rankInfo.sign}</td>
+                        <td>${rankInfo.absoluteDifference.toFixed(2)}</td>
+                        <td>${rankInfo.rank.toFixed(2)}</td>
+                        <td>${rankInfo.signedRank.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        table += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        return table;
+    }
+
+    // Event Listener for One-Sample Test
+    document.getElementById('calculateOneSample').addEventListener('click', () => {
+        // Show loading spinner
+        document.getElementById('oneSampleLoading').classList.remove('d-none');
+        // Hide previous results and errors
+        document.getElementById('oneSampleResults').innerHTML = '';
+        hideError('oneSampleError');
+
+        // Get input values
+        const dataInput = document.getElementById('oneSampleData').value;
+        const medianInput = document.getElementById('oneSampleMedian').value;
+        const data = parseInputData(dataInput);
+        const hypothesizedMedian = parseFloat(medianInput);
+
+        // Input validation
+        if (data.length === 0) {
+            showError('oneSampleError', 'Please enter valid numerical data.');
+            document.getElementById('oneSampleLoading').classList.add('d-none');
+            return;
+        }
+        if (isNaN(hypothesizedMedian)) {
+            showError('oneSampleError', 'Please enter a valid hypothesized median.');
+            document.getElementById('oneSampleLoading').classList.add('d-none');
+            return;
+        }
+
+        // Perform test
+        const result = performOneSampleTest(data, hypothesizedMedian);
+
+        // Generate results table
+        const resultsTable = generateOneSampleTable(result, data, hypothesizedMedian);
+
+        // Display results
+        document.getElementById('oneSampleResults').innerHTML = resultsTable;
+
+        // Hide loading spinner
+        document.getElementById('oneSampleLoading').classList.add('d-none');
+    });
+
+    // Event Listener for Two-Sample Test
+    document.getElementById('calculateTwoSample').addEventListener('click', () => {
+        // Show loading spinner
+        document.getElementById('twoSampleLoading').classList.remove('d-none');
+        // Hide previous results and errors
+        document.getElementById('twoSampleResults').innerHTML = '';
+        hideError('twoSampleError');
+
+        // Get input values
+        const firstSampleInput = document.getElementById('firstSampleData').value;
+        const secondSampleInput = document.getElementById('secondSampleData').value;
+        const sample1 = parseInputData(firstSampleInput);
+        const sample2 = parseInputData(secondSampleInput);
+
+        // Input validation
+        if (sample1.length === 0 || sample2.length === 0) {
+            showError('twoSampleError', 'Please enter valid numerical data for both samples.');
+            document.getElementById('twoSampleLoading').classList.add('d-none');
+            return;
+        }
+        if (sample1.length !== sample2.length) {
+            showError('twoSampleError', 'Both samples must have the same number of data points.');
+            document.getElementById('twoSampleLoading').classList.add('d-none');
+            return;
+        }
+
+        // Perform test
+        const result = performTwoSampleTest(sample1, sample2);
+
+        // Generate results table
+        const resultsTable = generateTwoSampleTable(result, sample1, sample2);
+
+        // Display results
+        document.getElementById('twoSampleResults').innerHTML = resultsTable;
+
+        // Hide loading spinner
+        document.getElementById('twoSampleLoading').classList.add('d-none');
+    });
+
+    /**
+     * Sample Data for Testing
+     * Uncomment the following lines to pre-fill the input fields with sample data.
+     */
+
+    // document.getElementById('oneSampleData').value = '5, 6, 7, 8, 6';
+    // document.getElementById('oneSampleMedian').value = '6';
+    // document.getElementById('firstSampleData').value = '5, 6, 7, 8';
+    // document.getElementById('secondSampleData').value = '6, 5, 8, 7';
+</script>
+
+
+
+</body>
+</html>

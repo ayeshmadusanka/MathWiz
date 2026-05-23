@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+
+    <!--- basic page needs
+    ================================================== -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MathWiz</title>
+
+    <script>
+        document.documentElement.classList.remove('no-js');
+        document.documentElement.classList.add('js');
+    </script>
+
+    <!-- CSS
+    ================================================== -->
+    <link rel="stylesheet" href="css/vendor.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/methods.css">
+    
+    
+
+    <!-- favicons
+    ================================================== -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f5f5ef;
+            color: black;
+            font-family: 'Lora', serif;
+        }
+        .btn, .item-card {
+            background-color: black;
+            color: white;
+        }
+        .btn:hover, .item-card:hover {
+            background-color: #333;
+        }
+    
+        /* Curving the card edges and adding gap between cards */
+        .item-card {
+            border-radius: 15px;
+        }
+        .item-card__title {
+            color: white;
+        }
+        .h2 {
+            color: black !important;
+        }
+        .s-pricing__cards .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+            width: 100%;
+        }
+        @media (max-width: 768px) {
+            .nav-buttons { justify-content: center; }
+        }
+    </style>
+    
+
+</head>
+
+<body id="top">
+
+    <!-- preloader
+    ================================================== -->
+    <div id="preloader">
+        <div id="loader">
+        </div>
+    </div>
+
+    <!-- page wrap
+    ================================================== -->
+    <div id="page" class="s-pagewrap">
+<style>
+.s-pricing__content::before { display: none !important; }
+</style>
+<div class="nav-buttons" style="padding: 30px 20px 10px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 2.76rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 2.76rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="s-pricing target-section">
+            <div class="row s-pricing__content" style="padding-top: 2rem;">
+                <div class="column lg-12 text-center">
+                    <h2 class="h2" style="color: black;">Numerical Methods</h2>
+                    <p>Explore the different numerical methods available in our application.</p>
+                </div>
+
+                <div class="column lg-12 s-pricing__cards">
+                    <div class="row">
+                        <a href="newtons.html" class="column item-card">
+                            <div class="item-card__content">
+                                <h3 class="item-card__title">Newton's Method</h3>
+                            </div>
+                        </a>
+                        <a href="secant.html" class="column item-card">
+                            <div class="item-card__content">
+                                <h3 class="item-card__title">Secant Method</h3>
+                            </div>
+                        </a>
+                        <a href="bisection.html" class="column item-card">
+                            <div class="item-card__content">
+                                <h3 class="item-card__title">Bisection Method</h3>
+                            </div>
+                        </a>
+                        <a href="huens.html" class="column item-card">
+                            <div class="item-card__content">
+                                <h3 class="item-card__title">Huen's Method</h3>
+                            </div>
+                        </a>
+                        <a href="rungekutta.html" class="column item-card">
+                            <div class="item-card__content">
+                                <h3 class="item-card__title">Runge Kutta Method</h3>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                </div> <!-- end s-pricing__cards -->
+            </div> <!-- end s-pricing__content -->
+        </section> <!-- end pricing -->
+
+    </div> <!-- end page -->
+
+    <script src="js/vendor.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>
+
+
+

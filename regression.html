@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Linear and Polynomial Regression</title>
+
+    <!-- Load Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Load Chart.js for graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Load MathJax for rendering equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body {
+            background-color: #f5f5ef;
+            color: black;
+            font-family: 'Lora', serif;
+        }
+
+        .container {
+            margin-top: 20px;
+            background-color: #f5f5ef;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        textarea, input {
+            resize: none;
+            background-color: #f5f5ef;
+            color: black;
+            border: 1px solid #ddd;
+        }
+
+        .form-control {
+            background-color: #f5f5ef;
+            color: black;
+            border: 1px solid #ddd;
+        }
+
+        .btn-custom {
+            background-color: black;
+            color: #ffffff;
+        }
+
+        .btn-custom:hover {
+            background-color: #333;
+        }
+
+        #equation, #mse {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .form-label {
+            color: black;
+        }
+
+        .text-muted {
+            color: #666 !important;
+        }
+
+        /* Toggle Switch Styles */
+        .form-check-label {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+
+
+<div class="container">
+    <h1 class="mb-4 text-center">Simple Linear and Polynomial Regression</h1>
+
+<!-- Toggle Switch for Regression Type -->
+<div class="form-check form-switch mb-4 d-flex align-items-center">
+    <input class="form-check-input" type="checkbox" id="regressionType" style="appearance: none; width: 40px; height: 20px; background-color: #ccc; border-radius: 20px; border: 2px solid #ccc; position: relative; outline: none; cursor: pointer;"
+        onchange="this.style.backgroundColor = this.checked ? 'black' : '#ccc'; this.style.borderColor = this.checked ? 'black' : '#ccc';"
+        onfocus="this.style.boxShadow = '0 0 0 0.2rem rgba(0, 0, 0, 0.25)';"
+        onblur="this.style.boxShadow = 'none';">
+    <label class="form-check-label ms-2" for="regressionType">Enable Polynomial Regression</label>
+</div>
+
+
+    
+    
+
+    <!-- Input Fields -->
+    <div class="mb-3">
+        <label for="bulkX" class="form-label">Enter X values (comma or space separated):</label>
+        <textarea id="bulkX" class="form-control" rows="3" placeholder="E.g. 1, 2, 3, 4, 5"></textarea>
+    </div>
+    
+    <div class="mb-3">
+        <label for="bulkY" class="form-label">Enter Y values (comma or space separated):</label>
+        <textarea id="bulkY" class="form-control" rows="3" placeholder="E.g. 5, 7, 9, 11, 13"></textarea>
+    </div>
+
+    <!-- Plot Button -->
+    <div class="text-center mb-4">
+        <button class="btn btn-custom" onclick="plotData()">Plot Data</button>
+    </div>
+
+    <!-- Chart Canvas -->
+    <div class="mb-4">
+        <canvas id="regressionChart"></canvas>
+    </div>
+
+    <!-- Regression Equation and MSE Display -->
+    <div id="equation" class="text-center">
+        Regression Equation:
+    </div>
+    <div id="mse" class="text-center">
+        Mean Squared Error: 
+    </div>
+</div>
+
+<script>
+    let xValues = [];
+    let yValues = [];
+    let chart;
+
+    // Load stored values from localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedX = localStorage.getItem('bulkX');
+        const savedY = localStorage.getItem('bulkY');
+
+        if (savedX) {
+            document.getElementById('bulkX').value = savedX;
+        }
+        if (savedY) {
+            document.getElementById('bulkY').value = savedY;
+        }
+    });
+
+    function plotData() {
+        const bulkX = document.getElementById('bulkX').value;
+        const bulkY = document.getElementById('bulkY').value;
+
+        xValues = bulkX.split(/[\s,]+/).map(Number).filter(val => !isNaN(val));
+        yValues = bulkY.split(/[\s,]+/).map(Number).filter(val => !isNaN(val));
+
+        if (xValues.length !== yValues.length) {
+            alert("The number of X values and Y values must be the same.");
+            return;
+        }
+
+        // Store values in localStorage
+        localStorage.setItem('bulkX', bulkX);
+        localStorage.setItem('bulkY', bulkY);
+
+        // Determine regression type
+        const regressionType = document.getElementById('regressionType').checked ? 'quadratic' : 'linear';
+        let coefficients, equation, mse;
+
+        if (regressionType === 'linear') {
+            ({ coefficients, equation, mse } = calculateLinearRegression(xValues, yValues));
+        } else {
+            ({ coefficients, equation, mse } = calculateQuadraticRegression(xValues, yValues));
+        }
+
+        // Display regression equation using MathJax
+        document.getElementById('equation').innerHTML = `Regression Equation: \\( y = ${equation} \\)`;
+        document.getElementById('mse').innerHTML = `Mean Squared Error: ${mse.toFixed(2)}`;
+        MathJax.typeset();
+
+        // Prepare data for Chart.js
+        const scatterData = xValues.map((x, i) => ({ x, y: yValues[i] }));
+
+        // Prepare regression line/curve
+        let regressionData = [];
+        const sortedIndices = xValues.map((x, i) => i).sort((a, b) => xValues[a] - xValues[b]);
+        const sortedX = sortedIndices.map(i => xValues[i]);
+
+        if (regressionType === 'linear') {
+            regressionData = sortedX.map(x => ({ x, y: coefficients[0] + coefficients[1] * x }));
+        } else {
+            regressionData = sortedX.map(x => ({ x, y: coefficients[0] + coefficients[1] * x + coefficients[2] * x * x }));
+        }
+
+        const data = {
+            datasets: [
+                {
+                    label: 'Data Points',
+                    data: scatterData,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    borderColor: 'rgba(0, 0, 0, 1)',
+                    borderWidth: 1,
+                    pointRadius: 5,
+                    fill: false,
+                    type: 'scatter',
+                },
+                {
+                    label: regressionType === 'linear' ? 'Linear Fit' : 'Polynomial Fit',
+                    data: regressionData,
+                    borderColor: 'rgba(0, 0, 0, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    type: 'line',
+                    tension: 0,
+                }
+            ]
+        };
+
+        const config = {
+            type: 'scatter',
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: 'X'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Y'
+                        }
+                    }
+                }
+            }
+        };
+
+        // If chart exists, destroy it before creating a new one
+        if (chart) {
+            chart.destroy();
+        }
+
+        chart = new Chart(
+            document.getElementById('regressionChart'),
+            config
+        );
+    }
+
+    function resetEquation() {
+        document.getElementById('equation').innerHTML = "Regression Equation:";
+        document.getElementById('mse').innerHTML = "Mean Squared Error:";
+    }
+
+    function calculateLinearRegression(x, y) {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.map((xi, i) => xi * y[i]).reduce((a, b) => a + b, 0);
+        const sumX2 = x.map(xi => xi * xi).reduce((a, b) => a + b, 0);
+
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+
+        const predictedY = x.map(xi => intercept + slope * xi);
+        const mse = predictedY.reduce((acc, pred, i) => acc + Math.pow(pred - y[i], 2), 0) / n;
+
+        return { coefficients: [intercept, slope], equation: `${intercept.toFixed(2)} + ${slope.toFixed(2)}x`, mse };
+    }
+
+    function calculateQuadraticRegression(x, y) {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumX2 = x.map(xi => xi * xi).reduce((a, b) => a + b, 0);
+        const sumX3 = x.map(xi => xi * xi * xi).reduce((a, b) => a + b, 0);
+        const sumX4 = x.map(xi => xi * xi * xi * xi).reduce((a, b) => a + b, 0);
+        const sumXY = x.map((xi, i) => xi * y[i]).reduce((a, b) => a + b, 0);
+        const sumX2Y = x.map((xi, i) => xi * xi * y[i]).reduce((a, b) => a + b, 0);
+
+        const matrix = [
+            [n, sumX, sumX2],
+            [sumX, sumX2, sumX3],
+            [sumX2, sumX3, sumX4]
+        ];
+
+        const results = [sumY, sumXY, sumX2Y];
+
+        const coefficients = solveMatrix(matrix, results);
+        const predictedY = x.map(xi => coefficients[0] + coefficients[1] * xi + coefficients[2] * xi * xi);
+        const mse = predictedY.reduce((acc, pred, i) => acc + Math.pow(pred - y[i], 2), 0) / n;
+
+        return { coefficients, equation: `${coefficients[0].toFixed(2)} + ${coefficients[1].toFixed(2)}x + ${coefficients[2].toFixed(2)}x^2`, mse };
+    }
+
+    function solveMatrix(matrix, results) {
+        const n = matrix.length;
+        for (let i = 0; i < n; i++) {
+            let maxRow = i;
+            for (let k = i + 1; k < n; k++) {
+                if (Math.abs(matrix[k][i]) > Math.abs(matrix[maxRow][i])) {
+                    maxRow = k;
+                }
+            }
+            const tmp = matrix[i];
+            matrix[i] = matrix[maxRow];
+            matrix[maxRow] = tmp;
+
+            const tmpResult = results[i];
+            results[i] = results[maxRow];
+            results[maxRow] = tmpResult;
+
+            for (let k = i + 1; k < n; k++) {
+                const factor = matrix[k][i] / matrix[i][i];
+                results[k] -= factor * results[i];
+                for (let j = i; j < n; j++) {
+                    matrix[k][j] -= factor * matrix[i][j];
+                }
+            }
+        }
+
+        const x = new Array(n);
+        for (let i = n - 1; i >= 0; i--) {
+            x[i] = results[i] / matrix[i][i];
+            for (let k = i - 1; k >= 0; k--) {
+                results[k] -= matrix[k][i] * x[i];
+            }
+        }
+        return x;
+    }
+</script>
+
+<!-- Load Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+</body>
+</html>
