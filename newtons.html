@@ -27,7 +27,7 @@
         .form-control {
             background-color: #f5f5ef;
             color: #000;
-            border: 1px solid #ccc;
+            border: 1px solid black;
         }
         .form-control::placeholder {
             color: #888;
@@ -42,6 +42,7 @@
         }
         .table-container {
             margin-top: 30px;
+            display: none;
         }
         .table-dark {
             background-color: #f5f5ef;
@@ -52,6 +53,11 @@
         }
         .table-dark tbody tr:hover {
             background-color: #e8e8d8;
+            color: black !important;
+            font-weight: bold !important;
+        }
+        .table-bordered, .table-bordered th, .table-bordered td {
+            border: 2px solid black !important;
         }
     </style>
 </head>
@@ -129,6 +135,7 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
     // Table body element for results
     const tbody = document.getElementById('resultTable').getElementsByTagName('tbody')[0];
     tbody.innerHTML = '';  // Clear previous results
+    document.querySelector('.table-container').style.display = 'block';
 
     let previousX = xOld;
     let rootFound = false;

@@ -23,6 +23,7 @@
         }
         .table-container {
             margin-top: 20px;
+            display: none;
         }
         .table-hover tbody tr:hover {
             background-color: #e8e8dc;
@@ -33,7 +34,7 @@
         .form-control {
             background-color: #f5f5ef;
             color: black;
-            border: 1px solid #ccc;
+            border: 1px solid black;
         }
         .form-control::placeholder {
             color: #888;
@@ -55,9 +56,14 @@
         }
         .table-dark tbody tr:hover {
             background-color: #e8e8dc;
+            color: black !important;
+            font-weight: bold !important;
         }
         .table-dark thead th {
             background-color: #e8e8dc;
+        }
+        .table-bordered, .table-bordered th, .table-bordered td {
+            border: 2px solid black !important;
         }
     </style>
 </head>
@@ -131,6 +137,7 @@
         const tolerance = 0.00000001;
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
+        document.querySelector('.table-container').style.display = 'block';
 
         let previous_x = x1;
         let rootFound = false;
