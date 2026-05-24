@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Derivative Graph Calculator</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.0.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        body {
+            font-family: 'Lora', serif;
+            background-color: #f5f5ef;
+            color: #000;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #000;
+        }
+        .func-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #000;
+        }
+        .form-control {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 1px solid black;
+        }
+        .form-control:focus {
+            background-color: #f5f5ef;
+            border-color: #000;
+            box-shadow: none;
+        }
+        .btn-success {
+            background-color: #000;
+            border-color: #000;
+        }
+        .btn-success:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        .btn-secondary {
+            background-color: #555;
+            border-color: #555;
+        }
+        .btn-secondary:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        .zoom-btn {
+            font-size: 1.1rem;
+            font-weight: bold;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chart-container {
+            position: relative;
+            margin-top: 20px;
+        }
+        .result-box {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-top: 15px;
+            color: #000;
+        }
+        .bending-list {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-top: 10px;
+            color: #000;
+        }
+        .derivative-display {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 10px;
+            color: #333;
+        }
+        .derivative-display .katex {
+            font-size: 1em;
+        }
+        .derivative-display table {
+            width: 100%;
+            color: #000;
+        }
+        .derivative-display table th {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 2px solid black !important;
+            text-align: center;
+            font-weight: bold;
+        }
+        .derivative-display table td {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 2px solid black !important;
+            text-align: center;
+            vertical-align: middle;
+        }
+        #result table {
+            color: #000;
+        }
+        #result table th {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 2px solid black !important;
+            text-align: center;
+            font-weight: bold;
+        }
+        #result table td {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 2px solid black !important;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+<div class="container">
+    <h1>Derivative Graph Calculator</h1>
+
+    <div class="form-row">
+        <div class="form-group col-md-8 offset-md-2" style="display:flex; align-items:center; gap:10px;">
+            <label class="func-label" style="margin-bottom:0; white-space:nowrap;">f(x) =</label>
+            <input type="text" id="funcInput" class="form-control" value="x^3 - 3*x" placeholder="e.g. x^3 - 3*x, sin(x), x^4 - 8*x^2">
+            <button class="btn btn-success" id="calcBtn" style="white-space:nowrap;">Calculate</button>
+        </div>
+    </div>
+
+    <div id="derivDisplay" class="derivative-display"></div>
+
+    <div class="chart-container" id="chartContainer">
+        <div style="position:absolute; top:-14px; right:8px; z-index:10; display:flex; gap:4px;">
+            <button class="btn btn-success btn-sm zoom-btn" id="zoomInBtn">&#43;</button>
+            <button class="btn btn-secondary btn-sm zoom-btn" id="zoomOutBtn">&minus;</button>
+            <button class="btn btn-secondary btn-sm zoom-btn" id="zoomResetBtn">&#8634;</button>
+        </div>
+
+        <canvas id="functionChart"></canvas>
+    </div>
+
+    <div id="result" class="result-box"></div>
+    <div id="bendingPoints" class="bending-list"></div>
+</div>
+
+<script>
+let chartInstance = null;
+let currentBendingPoints = [];
+let currentCriticalPoints = [];
+let zoomRange = 10;
+const defaultZoomRange = 10;
+let panOffsetX = 0;
+let panOffsetY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let currentFExpr = '';
+let currentFPrimeExpr = '';
+let currentFDoublePrimeExpr = '';
+
+function evaluatePoints(expr, xMin, xMax, steps) {
+    const f = math.compile(expr);
+    const points = [];
+    const step = (xMax - xMin) / steps;
+    for (let x = xMin; x <= xMax + step / 2; x += step) {
+        try {
+            const y = f.evaluate({x});
+            if (isFinite(y)) points.push({x, y});
+        } catch(e) {}
+    }
+    return points;
+}
+
+function bisect(fExpr, a, b) {
+    const f = math.compile(fExpr);
+    const tolerance = 1e-12;
+    const maxIter = 60;
+    let fa = f.evaluate({x: a});
+    let fb = f.evaluate({x: b});
+
+    if (Math.abs(fa) < 1e-14) return a;
+    if (Math.abs(fb) < 1e-14) return b;
+
+    for (let i = 0; i < maxIter; i++) {
+        const c = (a + b) / 2;
+        const fc = f.evaluate({x: c});
+
+        if (Math.abs(fc) < tolerance || (b - a) / 2 < tolerance) return c;
+
+        if (fa * fc < 0) {
+            b = c;
+            fb = fc;
+        } else {
+            a = c;
+            fa = fc;
+        }
+    }
+    return (a + b) / 2;
+}
+
+function findBendingPoints(secondDerivExpr, xMin, xMax) {
+    const f = math.compile(secondDerivExpr);
+    const steps = 600;
+    const roots = [];
+
+    let prevX = xMin;
+    let prevVal = f.evaluate({x: xMin});
+    if (Math.abs(prevVal) < 1e-10) roots.push(xMin);
+
+    for (let i = 1; i <= steps; i++) {
+        const x = xMin + (xMax - xMin) * i / steps;
+        const val = f.evaluate({x});
+
+        if (Math.abs(val) < 1e-10) {
+            if (roots.length === 0 || Math.abs(roots[roots.length - 1] - x) > 1e-8) roots.push(x);
+        } else if (prevVal * val < 0) {
+            const root = bisect(secondDerivExpr, prevX, x);
+            if (roots.length === 0 || Math.abs(roots[roots.length - 1] - root) > 1e-8) roots.push(root);
+        }
+
+        prevVal = val;
+        prevX = x;
+    }
+
+    const valEnd = f.evaluate({x: xMax});
+    if (Math.abs(valEnd) < 1e-10 && (roots.length === 0 || Math.abs(roots[roots.length - 1] - xMax) > 1e-8)) {
+        roots.push(xMax);
+    }
+
+    return roots.filter(r => r >= xMin && r <= xMax);
+}
+
+function findCriticalPoints(firstDerivExpr, secondDerivExpr, xMin, xMax) {
+    const f1 = math.compile(firstDerivExpr);
+    const steps = 600;
+    const roots = [];
+
+    let prevX = xMin;
+    let prevVal = f1.evaluate({x: xMin});
+    if (Math.abs(prevVal) < 1e-10) roots.push(xMin);
+
+    for (let i = 1; i <= steps; i++) {
+        const x = xMin + (xMax - xMin) * i / steps;
+        const val = f1.evaluate({x});
+
+        if (Math.abs(val) < 1e-10) {
+            if (roots.length === 0 || Math.abs(roots[roots.length - 1] - x) > 1e-8) roots.push(x);
+        } else if (prevVal * val < 0) {
+            const root = bisect(firstDerivExpr, prevX, x);
+            if (roots.length === 0 || Math.abs(roots[roots.length - 1] - root) > 1e-8) roots.push(root);
+        }
+
+        prevVal = val;
+        prevX = x;
+    }
+
+    const valEnd = f1.evaluate({x: xMax});
+    if (Math.abs(valEnd) < 1e-10 && (roots.length === 0 || Math.abs(roots[roots.length - 1] - xMax) > 1e-8)) {
+        roots.push(xMax);
+    }
+
+    const candidates = roots.filter(r => r >= xMin && r <= xMax);
+
+    // Classify using second derivative
+    const f2 = math.compile(secondDerivExpr);
+    return candidates.map(x => {
+        const secondVal = f2.evaluate({x});
+        let type;
+        if (Math.abs(secondVal) < 1e-8) type = 'inflection';
+        else if (secondVal > 0) type = 'min';
+        else type = 'max';
+        return { x, type };
+    });
+}
+
+const markerPlugin = {
+    id: 'markers',
+    beforeDraw: function(chart) {
+        const ctx = chart.ctx;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        if (!xScale || !yScale) return;
+
+        ctx.save();
+
+        const yZeroPx = yScale.getPixelForValue(0);
+
+        // Draw critical points (all black)
+        for (const pt of currentCriticalPoints) {
+            const xPx = xScale.getPixelForValue(pt.x);
+            const yPx = yScale.getPixelForValue(pt.y);
+
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(xPx, yPx);
+            ctx.lineTo(xPx, yZeroPx);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.arc(xPx, yPx, 5, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(xPx, yZeroPx - 5);
+            ctx.lineTo(xPx, yZeroPx + 5);
+            ctx.stroke();
+
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 11px Lora, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(pt.x.toFixed(4), xPx, yZeroPx + 7);
+        }
+
+        // Draw inflection points (all black)
+        for (const pt of currentBendingPoints) {
+            if (currentCriticalPoints.some(c => Math.abs(c.x - pt.x) < 1e-8)) continue;
+
+            const xPx = xScale.getPixelForValue(pt.x);
+            const yPx = yScale.getPixelForValue(pt.y);
+
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(xPx, yPx);
+            ctx.lineTo(xPx, yZeroPx);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.arc(xPx, yPx, 5, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(xPx, yZeroPx - 5);
+            ctx.lineTo(xPx, yZeroPx + 5);
+            ctx.stroke();
+
+            ctx.fillStyle = '#000';
+            ctx.font = '11px Lora, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(pt.x.toFixed(4), xPx, yZeroPx + 7);
+        }
+
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
+};
+
+function getDerivativeExpr(expr, n) {
+    let node = math.parse(expr);
+    for (let i = 0; i < n; i++) {
+        node = math.derivative(node, 'x');
+    }
+    return node.toString();
+}
+
+function checkIfExpr(expr) {
+    try {
+        math.compile(expr).evaluate({x: 0});
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+function plotCurves(fExpr, fPrimeExpr, fDoublePrimeExpr) {
+    currentFExpr = fExpr;
+    currentFPrimeExpr = fPrimeExpr;
+    currentFDoublePrimeExpr = fDoublePrimeExpr;
+    const ctx = document.getElementById('functionChart').getContext('2d');
+    const steps = 500;
+    const viewMin = -zoomRange + panOffsetX;
+    const viewMax = zoomRange + panOffsetX;
+    const pts1 = evaluatePoints(fExpr, viewMin, viewMax, steps);
+    const pts2 = evaluatePoints(fPrimeExpr, viewMin, viewMax, steps);
+
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: `f(x)`,
+                    data: pts1,
+                    showLine: true,
+                    borderColor: '#000',
+                    pointRadius: 0,
+                    fill: false,
+                    borderWidth: 2.5
+                },
+                {
+                    label: `f'(x)`,
+                    data: pts2,
+                    showLine: true,
+                    borderColor: '#000',
+                    pointRadius: 0,
+                    fill: false,
+                    borderWidth: 2,
+                    borderDash: [5, 3],
+                    hidden: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 16 / 9,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: { display: true, text: 'x', align: 'end' },
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        min: -zoomRange + panOffsetX,
+                        max: zoomRange + panOffsetX,
+                        position: 'center'
+                    },
+                    y: {
+                        title: { display: false },
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        min: -zoomRange + panOffsetY,
+                        max: zoomRange + panOffsetY,
+                        position: 'center'
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: { family: 'Lora' },
+                            usePointStyle: true,
+                            pointStyle: 'line'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `(${parseFloat(context.parsed.x.toFixed(4))}, ${parseFloat(context.parsed.y.toFixed(4))})`;
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [markerPlugin]
+        });
+}
+
+function applyZoom() {
+    if (!chartInstance) return;
+    const viewMin = -zoomRange + panOffsetX;
+    const viewMax = zoomRange + panOffsetX;
+    const steps = 500;
+    if (currentFExpr) {
+        chartInstance.data.datasets[0].data = evaluatePoints(currentFExpr, viewMin, viewMax, steps);
+    }
+    if (currentFPrimeExpr) {
+        chartInstance.data.datasets[1].data = evaluatePoints(currentFPrimeExpr, viewMin, viewMax, steps);
+    }
+    chartInstance.options.scales.x.min = viewMin;
+    chartInstance.options.scales.x.max = viewMax;
+    chartInstance.options.scales.x.position = 'center';
+    chartInstance.options.scales.y.min = -zoomRange + panOffsetY;
+    chartInstance.options.scales.y.max = zoomRange + panOffsetY;
+    chartInstance.options.scales.y.position = 'center';
+    chartInstance.update();
+    // Force axis position recalculation
+    if (chartInstance.scales.x) chartInstance.scales.x.options.position = 'center';
+    if (chartInstance.scales.y) chartInstance.scales.y.options.position = 'center';
+    chartInstance.render();
+}
+
+document.getElementById('zoomInBtn').addEventListener('click', () => {
+    zoomRange = Math.max(zoomRange * 0.7, 0.5);
+    applyZoom();
+});
+
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+    zoomRange = Math.min(zoomRange / 0.7, 50);
+    applyZoom();
+});
+
+document.getElementById('zoomResetBtn').addEventListener('click', () => {
+    zoomRange = defaultZoomRange;
+    panOffsetX = 0;
+    panOffsetY = 0;
+    applyZoom();
+});
+
+function exprToLatex(expr) {
+    let s = expr;
+    s = s.replace(/\^/g, '^');
+    s = s.replace(/sin\(/g, '\\sin(');
+    s = s.replace(/cos\(/g, '\\cos(');
+    s = s.replace(/tan\(/g, '\\tan(');
+    s = s.replace(/asin\(/g, '\\sin^{-1}(');
+    s = s.replace(/acos\(/g, '\\cos^{-1}(');
+    s = s.replace(/atan\(/g, '\\tan^{-1}(');
+    s = s.replace(/log10\(/g, '\\log_{10}(');
+    s = s.replace(/ln\(/g, '\\ln(');
+    s = s.replace(/log\(/g, '\\ln(');
+    s = s.replace(/sqrt\(/g, '\\sqrt{');
+    s = s.replace(/abs\(/g, '\\left|');
+    s = s.replace(/exp\(/g, 'e^{');
+    s = s.replace(/\bpi\b/gi, '\\pi ');
+    s = s.replace(/\*/g, '');
+    let openParen = (s.match(/\(/g) || []).length;
+    let closeParen = (s.match(/\)/g) || []).length;
+    let openBrace = (s.match(/\{/g) || []).length;
+    let closeBrace = (s.match(/\}/g) || []).length;
+    while (openParen > closeParen) { s += ')'; closeParen++; }
+    while (openBrace > closeBrace) { s += '}'; closeBrace++; }
+    return s;
+}
+
+function runCalculation() {
+    const expr = document.getElementById('funcInput').value.trim();
+
+    if (!expr) {
+        document.getElementById('result').innerHTML = '<span style="color:#c00;">Please enter a function expression.</span>';
+        document.getElementById('bendingPoints').innerHTML = '';
+        document.getElementById('derivDisplay').innerHTML = '';
+        return;
+    }
+
+    if (!checkIfExpr(expr)) {
+        document.getElementById('result').innerHTML = '<span style="color:#c00;">Invalid expression.</span>';
+        document.getElementById('bendingPoints').innerHTML = '';
+        document.getElementById('derivDisplay').innerHTML = '';
+        return;
+    }
+
+    // Compute derivatives
+    let fPrimeExpr, fDoublePrimeExpr;
+    try {
+        fPrimeExpr = getDerivativeExpr(expr, 1);
+        fDoublePrimeExpr = getDerivativeExpr(expr, 2);
+    } catch(e) {
+        document.getElementById('result').innerHTML = '<span style="color:#c00;">Could not compute derivative: ' + e.message + '</span>';
+        document.getElementById('bendingPoints').innerHTML = '';
+        document.getElementById('derivDisplay').innerHTML = '';
+        return;
+    }
+
+    // Display derivative expressions
+    let derivHtml = '';
+    if (typeof katex !== 'undefined') {
+        const fLatex = exprToLatex(expr);
+        const fPrimeLatex = exprToLatex(fPrimeExpr);
+        const fDoublePrimeLatex = exprToLatex(fDoublePrimeExpr);
+        derivHtml += '<table class="table table-bordered">';
+        derivHtml += '<thead><tr><th>Function</th><th>First Derivative</th><th>Second Derivative</th></tr></thead><tbody>';
+        derivHtml += '<tr><td>' + katex.renderToString('\\displaystyle ' + fLatex, { displayMode: false }) + '</td>';
+        derivHtml += '<td>' + katex.renderToString("\\displaystyle f'(x) = " + fPrimeLatex, { displayMode: false }) + '</td>';
+        derivHtml += '<td>' + katex.renderToString("\\displaystyle f''(x) = " + fDoublePrimeLatex, { displayMode: false }) + '</td></tr>';
+        derivHtml += '</tbody></table>';
+    } else {
+        derivHtml += '<p>f(x) = ' + expr + '<br>f\'(x) = ' + fPrimeExpr + '<br>f\'\'(x) = ' + fDoublePrimeExpr + '</p>';
+    }
+    document.getElementById('derivDisplay').innerHTML = derivHtml;
+
+    // Find bending points (inflection points) where f''(x) = 0
+    const bendRoots = findBendingPoints(fDoublePrimeExpr, -10, 10);
+
+    // Store with y-values
+    const f = math.compile(expr);
+    currentBendingPoints = bendRoots.map(x => ({ x, y: f.evaluate({x}) }));
+
+    // Find critical points where f'(x) = 0, classify by f''(x)
+    const critPoints = findCriticalPoints(fPrimeExpr, fDoublePrimeExpr, -10, 10);
+    currentCriticalPoints = critPoints.map(p => ({ x: p.x, y: f.evaluate({x: p.x}), type: p.type }));
+
+    // Build display table
+    const fPrimeComp = math.compile(fPrimeExpr);
+    const fDoublePrimeComp = math.compile(fDoublePrimeExpr);
+
+    const allPoints = [];
+    for (const p of critPoints) {
+        const yVal = f.evaluate({x: p.x});
+        const fPrimeVal = fPrimeComp.evaluate({x: p.x});
+        const fDoublePrimeVal = fDoublePrimeComp.evaluate({x: p.x});
+        allPoints.push({ x: p.x, y: yVal, fPrime: fPrimeVal, fDoublePrime: fDoublePrimeVal, type: p.type, source: 'critical' });
+    }
+    for (const r of bendRoots) {
+        if (allPoints.some(p => Math.abs(p.x - r) < 1e-8)) continue;
+        const yVal = f.evaluate({x: r});
+        const fPrimeVal = fPrimeComp.evaluate({x: r});
+        const fDoublePrimeVal = fDoublePrimeComp.evaluate({x: r});
+        allPoints.push({ x: r, y: yVal, fPrime: fPrimeVal, fDoublePrime: fDoublePrimeVal, type: 'inflection', source: 'bend' });
+    }
+
+    let resultHtml = '';
+    if (allPoints.length === 0) {
+        resultHtml = 'No critical or inflection points found in [-10, 10].';
+    } else {
+        resultHtml += '<table class="table table-bordered" style="margin-bottom:0;">';
+        resultHtml += '<thead><tr><th>Type</th><th>x</th><th>f(x)</th><th>f\'(x)</th><th>f\'\'(x)</th></tr></thead><tbody>';
+        const typeLabels = { min: 'Min', max: 'Max', inflection: 'Inflection' };
+        for (const p of allPoints) {
+            resultHtml += '<tr>';
+            resultHtml += '<td><strong>' + typeLabels[p.type] + '</strong></td>';
+            resultHtml += '<td>' + p.x.toFixed(4) + '</td>';
+            resultHtml += '<td>' + p.y.toFixed(4) + '</td>';
+            resultHtml += '<td>' + p.fPrime.toFixed(4) + '</td>';
+            resultHtml += '<td>' + p.fDoublePrime.toFixed(4) + '</td>';
+            resultHtml += '</tr>';
+        }
+        resultHtml += '</tbody></table>';
+    }
+    document.getElementById('result').innerHTML = resultHtml;
+    document.getElementById('bendingPoints').innerHTML = '';
+
+    plotCurves(expr, fPrimeExpr, fDoublePrimeExpr);
+}
+
+// Pan with mouse drag
+const canvas = document.getElementById('functionChart');
+canvas.style.cursor = 'crosshair';
+canvas.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mousemove', function(e) {
+    if (!isDragging || !chartInstance) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const xScale = chartInstance.scales.x;
+    const yScale = chartInstance.scales.y;
+    if (xScale && yScale) {
+        const pxPerUnitX = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
+        const pxPerUnitY = yScale.getPixelForValue(1) - yScale.getPixelForValue(0);
+        panOffsetX -= dx / pxPerUnitX;
+        panOffsetY += dy / pxPerUnitY;
+    }
+    applyZoom();
+});
+
+document.addEventListener('mouseup', function() {
+    if (isDragging) {
+        isDragging = false;
+        canvas.style.cursor = 'crosshair';
+    }
+});
+
+document.getElementById('calcBtn').addEventListener('click', runCalculation);
+document.getElementById('funcInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runCalculation();
+});
+
+runCalculation();
+</script>
+
+</body>
+</html>
