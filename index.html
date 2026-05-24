@@ -29,6 +29,27 @@
                 flex: none !important;
             }
         }
+        .row.plans.block-lg-one-third > .column {
+            width: 33.3333%;
+        }
+        .item-plan .item-plan__block,
+        .item-plan .item-plan__block * {
+            color: #fff;
+        }
+        .item-plan__features li::marker {
+            color: #fff;
+        }
+        .item-plan .item-plan__features li::before {
+            border-color: #fff;
+        }
+        .item-plan .btn {
+            background-color: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+        .item-plan .item-plan__block {
+            background-color: #000;
+        }
     </style>
 
     <!-- favicons
@@ -149,16 +170,8 @@
             <section id="pricing" class="s-pricing target-section">
                 <div class="row s-pricing__content">
 
-                    <div class="column lg-4 md-12 s-pricing__header">
-                        <h3 class="h2">Mathematical Methods Calculator</h3>
-                        <p>
-                            The Mathematical Methods Calculator is an advanced tool designed to simplify complex computations across various mathematical disciplines. 
-                            Ideal for students, educators, and professionals 
-                        </p>
-                    </div> <!-- end s-pricing__header -->
-
-                    <div class="column lg-8 md-12 s-pricing__plans">
-                        <div class="row plans block-lg-one-half block-tab-whole">
+                    <div class="column lg-12 md-12 s-pricing__plans">
+                        <div class="row plans block-lg-one-third block-tab-whole">
 
                             <div class="column item-plan item-plan--popular">
                                 <div class="item-plan__block"> 
@@ -209,6 +222,25 @@
                                         </ul>
                 
                                         <a class="btn btn--primary u-fullwidth" href="statistics.html">Get Started</a>
+                                    </div>  
+                                
+                                </div>
+                            </div> <!-- end item-plan -->
+                            <div class="column item-plan">
+                                <div class="item-plan__block"> 
+
+                                    <div class="item-plan__top-part">
+                                        <h3 class="item-plan__title">Calculus</h3>
+                                        <p class="item-plan__price"><sup>Calculator</sup></p>
+                                        
+                                    </div>
+                
+                                    <div class="item-plan__bottom-part">
+                                        <ul class="item-plan__features">
+                                            <li><span>Area between</span> curves</li>
+                                        </ul>
+                
+                                        <a class="btn btn--primary u-fullwidth" href="calculus.html">Get Started</a>
                                     </div>  
                                 
                                 </div>
