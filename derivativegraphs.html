@@ -547,13 +547,16 @@ document.getElementById('zoomResetBtn').addEventListener('click', () => {
 });
 
 function exprToLatex(expr) {
+    let s = expr;
+    s = s.replace(/\(([^()]+)\)\^\(-(\d+(?:\.\d+)?)\)/g, '1/(($1)^$2)');
+    s = s.replace(/([a-zA-Z0-9π]+)\^\(-(\d+(?:\.\d+)?)\)/g, '1/($1^$2)');
     try {
-        const node = math.parse(expr);
+        const node = math.parse(s);
         let tex = node.toTex({ parenthesis: 'keep' });
         tex = tex.replace(/\\cdot\s*/g, '');
         return tex;
     } catch(e) {
-        let s = expr;
+        s = expr;
         s = s.replace(/\^/g, '^');
         s = s.replace(/sin\(/g, '\\sin(');
         s = s.replace(/cos\(/g, '\\cos(');
