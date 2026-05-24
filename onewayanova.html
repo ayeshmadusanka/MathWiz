@@ -88,7 +88,7 @@
             background-color: #333;
             border-color: #333;
         }
-        input[type="number"] {
+        .form-control {
             background-color: #f5f5ef;
             color: black;
             border-color: #f5f5ef;
@@ -99,6 +99,19 @@
         .btn-group button {
             color: #fff;
         }
+        .mode-toggle .btn {
+            color: black;
+            border-color: black;
+            background-color: transparent;
+            font-size: 1.1rem;
+            padding: 8px 24px;
+        }
+        .mode-toggle .btn.active,
+        .mode-toggle .btn:hover {
+            color: #fff;
+            background-color: black;
+            border-color: black;
+        }
     </style>
 </head>
 <body>
@@ -108,16 +121,21 @@
     <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
 </div>
 
-
-
 <div class="container">
     <div class="section">
-        <h1 class="text-center">One-Way ANOVA</h1>
+        <h1 class="text-center" id="pageTitle">One-Way ANOVA</h1>
+    </div>
+
+    <div class="section text-center">
+        <div class="btn-group mode-toggle" role="group">
+            <button type="button" class="btn active" id="oneWayBtn">One-Way ANOVA</button>
+            <button type="button" class="btn" id="twoWayBtn">Two-Way ANOVA</button>
+        </div>
     </div>
 
     <div class="section">
         <h2>Enter Data</h2>
-        <p>Please enter your data in the table below. Each cell should contain a numeric value representing an observation for that treatment.</p>
+        <p id="dataDescription">Please enter your data in the table below. Each cell should contain a numeric value representing an observation for that treatment.</p>
         <div class="btn-group">
             <button type="button" class="btn btn-success" id="addRow">Add Row</button>
             <button type="button" class="btn btn-secondary" id="removeRow">Remove Row</button>
@@ -129,7 +147,7 @@
             <table class="table table-bordered" id="dataTable">
                 <thead id="tableHead">
                     <tr>
-                        <th>Treatment</th>
+                        <th id="firstHeader">Treatment</th>
                         <th>Observation 1</th>
                         <th>Observation 2</th>
                         <th>Observation 3</th>
@@ -138,21 +156,21 @@
                 <tbody id="dataTableBody">
                     <tr>
                         <td>Treatment 1</td>
-                        <td><input type="number" class="form-control" name="obs1[]" required></td>
-                        <td><input type="number" class="form-control" name="obs2[]" required></td>
-                        <td><input type="number" class="form-control" name="obs3[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs1[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs2[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs3[]" required></td>
                     </tr>
                     <tr>
                         <td>Treatment 2</td>
-                        <td><input type="number" class="form-control" name="obs1[]" required></td>
-                        <td><input type="number" class="form-control" name="obs2[]" required></td>
-                        <td><input type="number" class="form-control" name="obs3[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs1[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs2[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs3[]" required></td>
                     </tr>
                     <tr>
                         <td>Treatment 3</td>
-                        <td><input type="number" class="form-control" name="obs1[]" required></td>
-                        <td><input type="number" class="form-control" name="obs2[]" required></td>
-                        <td><input type="number" class="form-control" name="obs3[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs1[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs2[]" required></td>
+                        <td><input type="text" inputmode="decimal" class="form-control" name="obs3[]" required></td>
                     </tr>
                 </tbody>
             </table>
@@ -168,202 +186,381 @@
     let rowCounter = 3;
     let columnCounter = 3;
     let tableData = [];
+    let anovaMode = 'oneway';
+
+    function updateLabels() {
+        const firstHeader = document.getElementById('firstHeader');
+        const rows = document.querySelectorAll('#dataTableBody tr');
+        const headerRow = document.getElementById('tableHead').rows[0];
+        const dataDesc = document.getElementById('dataDescription');
+
+        if (anovaMode === 'oneway') {
+            document.title = 'One-Way ANOVA';
+            document.getElementById('pageTitle').textContent = 'One-Way ANOVA';
+            firstHeader.textContent = 'Treatment';
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = `Treatment ${index + 1}`;
+            });
+            for (let i = 1; i < headerRow.cells.length; i++) {
+                headerRow.cells[i].textContent = `Observation ${i}`;
+            }
+            dataDesc.textContent = 'Please enter your data in the table below. Each cell should contain a numeric value representing an observation for that treatment.';
+        } else {
+            document.title = 'Two-Way ANOVA';
+            document.getElementById('pageTitle').textContent = 'Two-Way ANOVA';
+            firstHeader.textContent = 'Factor A';
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = `Factor A Level ${index + 1}`;
+            });
+            for (let i = 1; i < headerRow.cells.length; i++) {
+                headerRow.cells[i].textContent = `Factor B Level ${i}`;
+            }
+            dataDesc.textContent = 'Please enter your data in the table below. Rows represent Factor A levels, columns represent Factor B levels. The additive model assumes no interaction between factors.';
+        }
+    }
 
     function updateRowLabels() {
-        Array.from(document.querySelectorAll('#dataTableBody tr')).forEach((row, index) => {
-            row.cells[0].textContent = `Treatment ${index + 1}`;
-        });
+        const rows = document.querySelectorAll('#dataTableBody tr');
+        if (anovaMode === 'oneway') {
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = `Treatment ${index + 1}`;
+            });
+        } else {
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = `Factor A Level ${index + 1}`;
+            });
+        }
+    }
+
+    function parseCellValues(input) {
+        const raw = input.value;
+        if (!raw || raw.trim() === '') return [];
+        return raw.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
     }
 
     function collectTableData() {
-    const tableBody = document.getElementById('dataTableBody');
-    tableData = []; // Clear previous data
-
-    Array.from(tableBody.rows).forEach((row) => {
-        const rowData = [];
-        Array.from(row.cells).slice(1).forEach((cell) => {
-            const value = parseFloat(cell.querySelector('input').value) || 0;
-            rowData.push(value);
+        const tableBody = document.getElementById('dataTableBody');
+        tableData = [];
+        Array.from(tableBody.rows).forEach((row) => {
+            const rowData = [];
+            Array.from(row.cells).slice(1).forEach((cell) => {
+                const value = parseFloat(cell.querySelector('input').value) || 0;
+                rowData.push(value);
+            });
+            tableData.push(rowData);
         });
-        tableData.push(rowData); // Add the row data (treatment data) to the tableData array
-    });
-    console.log('Table Data:', tableData);
-}
+    }
 
-function calculateTotalsAndANOVA() {
-    collectTableData(); // Collect the entered data first
+    function calculateOneWayANOVA(tableBody, numRows) {
+        const allValues = [];
+        const rowLabels = [];
+        const cellInputs = [];
 
-    const tableBody = document.getElementById('dataTableBody');
-    const numRows = tableBody.rows.length;
+        Array.from(tableBody.rows).forEach((row, rowIndex) => {
+            rowLabels[rowIndex] = row.cells[0].textContent;
+            const rowInputs = [];
+            Array.from(row.cells).slice(1).forEach((cell) => {
+                const input = cell.querySelector('input');
+                rowInputs.push(input);
+                const vals = parseCellValues(input);
+                vals.forEach(v => {
+                    allValues.push({ value: v, row: rowIndex });
+                });
+            });
+            cellInputs.push(rowInputs);
+        });
 
-    let rowTotals = [];
-    let columnTotals = {};
-    let grandTotal = 0;
-    let numObservations = [];
-    let totalObservations = 0; // Number of non-null observations
+        let rowTotals = [];
+        let numObservations = [];
+        let grandTotal = 0;
+        let totalObservations = 0;
 
-    // Calculate row totals and column totals
-    Array.from(tableBody.rows).forEach((row, rowIndex) => {
-        let rowSum = 0;
-        let numCells = row.cells.length - 1; // Exclude treatment column
+        allValues.forEach(({ value, row }) => {
+            if (rowTotals[row] === undefined) rowTotals[row] = 0;
+            if (numObservations[row] === undefined) numObservations[row] = 0;
+            rowTotals[row] += value;
+            numObservations[row]++;
+            grandTotal += value;
+            totalObservations++;
+        });
 
-        let nonNullCount = 0;
+        let totalTableHtml = '<h3>Data Table with Totals:</h3><table class="table table-bordered"><thead><tr><th>Treatment</th>';
+        const maxCells = Math.max(...cellInputs.map(row => row.length));
+        for (let i = 1; i <= maxCells; i++) {
+            totalTableHtml += `<th>Observation ${i}</th>`;
+        }
+        totalTableHtml += '<th>Row Total</th></tr></thead><tbody>';
 
-        Array.from(row.cells).slice(1).forEach((cell, colIndex) => {
-            const value = parseFloat(cell.querySelector('input').value);
-            if (!isNaN(value)) {
-                rowSum += value;
-                grandTotal += value;
-                nonNullCount += 1;
-                
-                if (!columnTotals[colIndex]) {
-                    columnTotals[colIndex] = 0;
-                }
-                columnTotals[colIndex] += value;
+        Array.from(tableBody.rows).forEach((row, rowIndex) => {
+            totalTableHtml += `<tr><td>${row.cells[0].textContent}</td>`;
+            Array.from(row.cells).slice(1).forEach((cell) => {
+                totalTableHtml += `<td>${cell.querySelector('input').value}</td>`;
+            });
+            totalTableHtml += `<td>${rowTotals[rowIndex]}</td></tr>`;
+        });
+
+        totalTableHtml += `<tr><td>Grand Total</td><td colspan="${maxCells}"></td><td>${grandTotal}</td></tr></tbody></table>`;
+
+        document.getElementById('results').innerHTML = totalTableHtml;
+
+        const grandMean = grandTotal / totalObservations;
+        let ssTotal = 0, ssTreatment = 0;
+
+        allValues.forEach(({ value }) => {
+            ssTotal += Math.pow(value - grandMean, 2);
+        });
+
+        rowTotals.forEach((rowTotal, rowIndex) => {
+            const treatmentMean = rowTotal / numObservations[rowIndex];
+            ssTreatment += numObservations[rowIndex] * Math.pow(treatmentMean - grandMean, 2);
+        });
+
+        const ssError = ssTotal - ssTreatment;
+        const dfTotal = totalObservations - 1;
+        const dfTreatment = numRows - 1;
+        const dfError = dfTotal - dfTreatment;
+        const msTreatment = ssTreatment / dfTreatment;
+        const msError = ssError / dfError;
+        const fStatistic = msTreatment / msError;
+        const pValue = 1 - jStat.centralF.cdf(fStatistic, dfTreatment, dfError);
+
+        const anovaHtml = `
+            <h3>ANOVA Table:</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Source of Variation</th>
+                        <th>SS</th>
+                        <th>df</th>
+                        <th>MS</th>
+                        <th>F</th>
+                        <th>p-value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Treatments</td>
+                        <td>${ssTreatment.toFixed(4)}</td>
+                        <td>${dfTreatment}</td>
+                        <td>${msTreatment.toFixed(4)}</td>
+                        <td>${fStatistic.toFixed(4)}</td>
+                        <td>${pValue.toFixed(4)}</td>
+                    </tr>
+                    <tr>
+                        <td>Error</td>
+                        <td>${ssError.toFixed(4)}</td>
+                        <td>${dfError}</td>
+                        <td>${msError.toFixed(4)}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Total</td>
+                        <td>${ssTotal.toFixed(4)}</td>
+                        <td>${dfTotal}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+        return { anovaHtml };
+    }
+
+    function calculateTwoWayANOVA(tableBody) {
+        const numRows = tableBody.rows.length;
+        const numCols = document.getElementById('tableHead').rows[0].cells.length - 1;
+
+        const allValues = [];
+
+        Array.from(tableBody.rows).forEach((row, rowIndex) => {
+            Array.from(row.cells).slice(1).forEach((cell, colIndex) => {
+                const vals = parseCellValues(cell.querySelector('input'));
+                vals.forEach(v => {
+                    allValues.push({ value: v, row: rowIndex, col: colIndex });
+                });
+            });
+        });
+
+        let rowTotals = new Array(numRows).fill(0);
+        let colTotals = new Array(numCols).fill(0);
+        let rowCounts = new Array(numRows).fill(0);
+        let colCounts = new Array(numCols).fill(0);
+        let grandTotal = 0;
+        let totalObservations = 0;
+        let ssTotalRaw = 0;
+
+        allValues.forEach(({ value, row, col }) => {
+            rowTotals[row] += value;
+            colTotals[col] += value;
+            rowCounts[row]++;
+            colCounts[col]++;
+            grandTotal += value;
+            totalObservations++;
+            ssTotalRaw += value * value;
+        });
+
+        const N = totalObservations;
+        const CF = (grandTotal * grandTotal) / N;
+        const ssTotal = ssTotalRaw - CF;
+
+        let ssA = 0;
+        for (let i = 0; i < numRows; i++) {
+            if (rowCounts[i] > 0) ssA += (rowTotals[i] * rowTotals[i]) / rowCounts[i];
+        }
+        ssA -= CF;
+
+        let ssB = 0;
+        for (let j = 0; j < numCols; j++) {
+            if (colCounts[j] > 0) ssB += (colTotals[j] * colTotals[j]) / colCounts[j];
+        }
+        ssB -= CF;
+
+        const ssError = ssTotal - ssA - ssB;
+        const dfA = numRows - 1;
+        const dfB = numCols - 1;
+        const dfTotal = N - 1;
+        const dfError = dfTotal - dfA - dfB;
+
+        const msError = dfError > 0 ? ssError / dfError : 0;
+        const msA = ssA / dfA;
+        const msB = ssB / dfB;
+
+        let fA = 'N/A', pA = 'N/A', fB = 'N/A', pB = 'N/A';
+        if (dfError > 0) {
+            if (msError > 0) {
+                const fAval = msA / msError;
+                const fBval = msB / msError;
+                fA = fAval.toFixed(4);
+                pA = (1 - jStat.centralF.cdf(fAval, dfA, dfError)).toFixed(4);
+                fB = fBval.toFixed(4);
+                pB = (1 - jStat.centralF.cdf(fBval, dfB, dfError)).toFixed(4);
+            } else {
+                if (ssA > 0) { fA = 'Infinity'; pA = '0.0000'; }
+                if (ssB > 0) { fB = 'Infinity'; pB = '0.0000'; }
             }
+        }
+
+        let totalTableHtml = '<h3>Data Table with Totals:</h3><table class="table table-bordered"><thead><tr><th>Factor A</th>';
+        for (let j = 1; j <= numCols; j++) {
+            totalTableHtml += `<th>Factor B Level ${j}</th>`;
+        }
+        totalTableHtml += '<th>Row Total</th></tr></thead><tbody>';
+
+        Array.from(tableBody.rows).forEach((row, rowIndex) => {
+            totalTableHtml += `<tr><td>${row.cells[0].textContent}</td>`;
+            Array.from(row.cells).slice(1).forEach((cell) => {
+                totalTableHtml += `<td>${cell.querySelector('input').value}</td>`;
+            });
+            totalTableHtml += `<td>${rowTotals[rowIndex]}</td></tr>`;
         });
-        rowTotals[rowIndex] = rowSum;
-        numObservations.push(nonNullCount);
-        totalObservations += nonNullCount;
-    });
 
-    // Build a new table with totals
-    let totalTableHtml = '<h3>Data Table with Totals:</h3><table class="table table-bordered"><thead><tr><th>Treatment</th>';
-    for (let i = 1; i <= Math.max(...numObservations); i++) {
-        totalTableHtml += `<th>Observation ${i}</th>`;
-    }
-    totalTableHtml += '<th>Row Total</th></tr></thead><tbody>';
+        totalTableHtml += '<tr><td>Column Total</td>';
+        for (let j = 0; j < numCols; j++) {
+            totalTableHtml += `<td>${colTotals[j]}</td>`;
+        }
+        totalTableHtml += `<td>${grandTotal}</td></tr></tbody></table>`;
 
-    Array.from(tableBody.rows).forEach((row, rowIndex) => {
-        totalTableHtml += `<tr><td>${row.cells[0].textContent}</td>`;
-        Array.from(row.cells).slice(1).forEach((cell, colIndex) => {
-            totalTableHtml += `<td>${cell.querySelector('input').value}</td>`;
-        });
-        totalTableHtml += `<td>${rowTotals[rowIndex]}</td></tr>`;
-    });
+        document.getElementById('results').innerHTML = totalTableHtml;
 
-    totalTableHtml += '<tr><td>Column Totals</td>';
-    for (let i = 0; i < Math.max(...numObservations); i++) {
-        totalTableHtml += `<td>${columnTotals[i] || 0}</td>`;
-    }
-    totalTableHtml += `<td>${grandTotal}</td></tr></tbody></table>`;
+        const anovaHtml = `
+            <h3>ANOVA Table (Additive Two-Way):</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Source of Variation</th>
+                        <th>SS</th>
+                        <th>df</th>
+                        <th>MS</th>
+                        <th>F</th>
+                        <th>p-value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Factor A</td>
+                        <td>${ssA.toFixed(4)}</td>
+                        <td>${dfA}</td>
+                        <td>${msA.toFixed(4)}</td>
+                        <td>${fA}</td>
+                        <td>${pA}</td>
+                    </tr>
+                    <tr>
+                        <td>Factor B</td>
+                        <td>${ssB.toFixed(4)}</td>
+                        <td>${dfB}</td>
+                        <td>${msB.toFixed(4)}</td>
+                        <td>${fB}</td>
+                        <td>${pB}</td>
+                    </tr>
+                    <tr>
+                        <td>Error</td>
+                        <td>${ssError.toFixed(4)}</td>
+                        <td>${dfError}</td>
+                        <td>${msError.toFixed(4)}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Total</td>
+                        <td>${ssTotal.toFixed(4)}</td>
+                        <td>${dfTotal}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>`;
 
-    document.getElementById('results').innerHTML = totalTableHtml;
-
-    // Calculate ANOVA values
-    const grandMean = grandTotal / totalObservations;
-    let ssTotal = 0;
-    let ssTreatment = 0;
-    let ssError = 0;
-
-    // SS Total
-    Array.from(tableBody.rows).forEach(row => {
-        Array.from(row.cells).slice(1).forEach(cell => {
-            const value = parseFloat(cell.querySelector('input').value);
-            if (!isNaN(value)) {
-                ssTotal += Math.pow(value - grandMean, 2);
-            }
-        });
-    });
-
-    // SS Treatment
-    rowTotals.forEach((rowTotal, rowIndex) => {
-        const treatmentMean = rowTotal / numObservations[rowIndex];
-        ssTreatment += numObservations[rowIndex] * Math.pow(treatmentMean - grandMean, 2);
-    });
-
-    // SS Error
-    ssError = ssTotal - ssTreatment;
-
-    // Degrees of Freedom
-    const dfTotal = totalObservations - 1; // Total df
-    const dfTreatment = numRows - 1; // Treatments df
-    const dfError = dfTotal - dfTreatment; // Error df
-
-    // Mean Squares
-    const msTreatment = ssTreatment / dfTreatment;
-    const msError = ssError / dfError;
-
-    // F-statistic
-    const fStatistic = msTreatment / msError;
-
-    // Calculate p-value using F-distribution
-    function calculatePValue(fStatistic, df1, df2) {
-        return 1 - jStat.centralF.cdf(fStatistic, df1, df2);
+        return { anovaHtml };
     }
 
-    const pValue = calculatePValue(fStatistic, dfTreatment, dfError);
+    function calculateTotalsAndANOVA() {
+        collectTableData();
+        const tableBody = document.getElementById('dataTableBody');
+        const numRows = tableBody.rows.length;
 
-    // Build ANOVA table
-    const anovaTableHtml = `
-        <h3>ANOVA Table:</h3>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Source of Variation</th>
-                    <th>SS</th>
-                    <th>df</th>
-                    <th>MS</th>
-                    <th>F</th>
-                    <th>p-value</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Treatments</td>
-                    <td>${ssTreatment.toFixed(4)}</td>
-                    <td>${dfTreatment}</td>
-                    <td>${msTreatment.toFixed(4)}</td>
-                    <td>${fStatistic.toFixed(4)}</td>
-                    <td>${pValue.toFixed(4)}</td>
-                </tr>
-                <tr>
-                    <td>Error</td>
-                    <td>${ssError.toFixed(4)}</td>
-                    <td>${dfError}</td>
-                    <td>${msError.toFixed(4)}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Total</td>
-                    <td>${ssTotal.toFixed(4)}</td>
-                    <td>${dfTotal}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>`;
+        if (anovaMode === 'oneway') {
+            const result = calculateOneWayANOVA(tableBody, numRows);
+            document.getElementById('anovaResults').innerHTML = result.anovaHtml;
+        } else {
+            const result = calculateTwoWayANOVA(tableBody);
+            document.getElementById('anovaResults').innerHTML = result.anovaHtml;
+        }
+    }
 
-    document.getElementById('anovaResults').innerHTML = anovaTableHtml;
-}
+    document.getElementById('oneWayBtn').addEventListener('click', () => {
+        document.getElementById('oneWayBtn').classList.add('active');
+        document.getElementById('twoWayBtn').classList.remove('active');
+        anovaMode = 'oneway';
+        updateLabels();
+        document.getElementById('results').innerHTML = '';
+        document.getElementById('anovaResults').innerHTML = '';
+    });
 
-
-
-
-
+    document.getElementById('twoWayBtn').addEventListener('click', () => {
+        document.getElementById('twoWayBtn').classList.add('active');
+        document.getElementById('oneWayBtn').classList.remove('active');
+        anovaMode = 'twoway';
+        updateLabels();
+        document.getElementById('results').innerHTML = '';
+        document.getElementById('anovaResults').innerHTML = '';
+    });
 
     document.getElementById('addRow').addEventListener('click', () => {
-    const tableBody = document.getElementById('dataTableBody');
-    const newRow = document.createElement('tr');
-
-    // Create the new row HTML
-    let newRowHtml = `<td>Treatment ${++rowCounter}</td>`;
-    for (let i = 1; i <= columnCounter; i++) {
-        newRowHtml += `<td><input type="number" class="form-control" name="obs${i}[]" required></td>`;
-    }
-    newRowHtml += '</tr>';
-    
-    // Set the inner HTML of the new row
-    newRow.innerHTML = newRowHtml;
-
-    // Append the new row to the table body
-    tableBody.appendChild(newRow);
-
-    // Update row labels (treatments)
-    updateRowLabels();
-});
+        const tableBody = document.getElementById('dataTableBody');
+        const newRow = document.createElement('tr');
+        const label = anovaMode === 'oneway' ? 'Treatment' : 'Factor A Level';
+        let newRowHtml = `<td>${label} ${++rowCounter}</td>`;
+        for (let i = 1; i <= columnCounter; i++) {
+            newRowHtml += `<td><input type="text" inputmode="decimal" class="form-control" name="obs${i}[]" required></td>`;
+        }
+        newRowHtml += '</tr>';
+        newRow.innerHTML = newRowHtml;
+        tableBody.appendChild(newRow);
+        updateRowLabels();
+    });
 
     document.getElementById('removeRow').addEventListener('click', () => {
         const tableBody = document.getElementById('dataTableBody');
@@ -377,16 +574,13 @@ function calculateTotalsAndANOVA() {
     document.getElementById('addColumn').addEventListener('click', () => {
         const tableHead = document.getElementById('tableHead').rows[0];
         const tableBody = document.getElementById('dataTableBody');
-        
-        // Add new column header
         const newHeader = document.createElement('th');
-        newHeader.textContent = `Observation ${++columnCounter}`;
+        const headerLabel = anovaMode === 'oneway' ? 'Observation' : 'Factor B Level';
+        newHeader.textContent = `${headerLabel} ${++columnCounter}`;
         tableHead.appendChild(newHeader);
-        
-        // Add new cells to each row
         Array.from(tableBody.rows).forEach((row) => {
             const newCell = document.createElement('td');
-            newCell.innerHTML = `<input type="number" class="form-control" name="obs${columnCounter}[]" required>`;
+            newCell.innerHTML = `<input type="text" inputmode="decimal" class="form-control" name="obs${columnCounter}[]" required>`;
             row.appendChild(newCell);
         });
     });
@@ -394,16 +588,11 @@ function calculateTotalsAndANOVA() {
     document.getElementById('removeColumn').addEventListener('click', () => {
         const tableHead = document.getElementById('tableHead').rows[0];
         const tableBody = document.getElementById('dataTableBody');
-        
-        if (tableHead.cells.length > 2) { // At least one observation column and the treatment column should remain
-            // Remove last column header
+        if (tableHead.cells.length > 2) {
             tableHead.deleteCell(-1);
-            
-            // Remove last cells from each row
             Array.from(tableBody.rows).forEach((row) => {
                 row.deleteCell(-1);
             });
-            
             columnCounter--;
         }
     });
@@ -412,8 +601,6 @@ function calculateTotalsAndANOVA() {
         calculateTotalsAndANOVA();
     });
 </script>
-
-
 
 </body>
 </html>
