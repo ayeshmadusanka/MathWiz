@@ -149,6 +149,11 @@
             <button class="btn btn-success" id="calcBtn" style="white-space:nowrap;">Calculate</button>
         </div>
     </div>
+    <div class="row">
+        <div class="col-md-8 offset-md-2" style="margin-top:5px;">
+            <div id="livePreview" class="form-text" style="text-align:center; font-size:1.3rem;"></div>
+        </div>
+    </div>
 
     <div id="derivDisplay" class="derivative-display"></div>
 
@@ -395,6 +400,21 @@ function getDerivativeExpr(expr, n) {
     return node.toString();
 }
 
+function fixInput(s) {
+    s = s.replace(/\s+/g, '');
+    s = s.replace(/\)\(/g, ')*(');
+    s = s.replace(/(\d)(\()/g, '$1*$2');
+    s = s.replace(/(\))(\d)/g, '$1*$2');
+    s = s.replace(/(\d)(x)/g, '$1*$2');
+    s = s.replace(/(\d)(pi)/g, '$1*$2');
+    s = s.replace(/(x)(\()/g, '$1*$2');
+    s = s.replace(/(x)(x)/g, '$1*$2');
+    s = s.replace(/(x)(sin|cos|tan|log|ln|sqrt|abs|exp)/g, '$1*$2');
+    s = s.replace(/(pi)(x)/g, '$1*$2');
+    s = s.replace(/(pi)(sin|cos|tan|log|ln|sqrt|abs|exp)/g, '$1*$2');
+    return s;
+}
+
 function checkIfExpr(expr) {
     try {
         math.compile(expr).evaluate({x: 0});
@@ -527,40 +547,56 @@ document.getElementById('zoomResetBtn').addEventListener('click', () => {
 });
 
 function exprToLatex(expr) {
-    let s = expr;
-    s = s.replace(/\^/g, '^');
-    s = s.replace(/sin\(/g, '\\sin(');
-    s = s.replace(/cos\(/g, '\\cos(');
-    s = s.replace(/tan\(/g, '\\tan(');
-    s = s.replace(/asin\(/g, '\\sin^{-1}(');
-    s = s.replace(/acos\(/g, '\\cos^{-1}(');
-    s = s.replace(/atan\(/g, '\\tan^{-1}(');
-    s = s.replace(/log10\(/g, '\\log_{10}(');
-    s = s.replace(/ln\(/g, '\\ln(');
-    s = s.replace(/log\(/g, '\\ln(');
-    s = s.replace(/sqrt\(/g, '\\sqrt{');
-    s = s.replace(/abs\(/g, '\\left|');
-    s = s.replace(/exp\(/g, 'e^{');
-    s = s.replace(/\bpi\b/gi, '\\pi ');
-    s = s.replace(/\*/g, '');
-    let openParen = (s.match(/\(/g) || []).length;
-    let closeParen = (s.match(/\)/g) || []).length;
-    let openBrace = (s.match(/\{/g) || []).length;
-    let closeBrace = (s.match(/\}/g) || []).length;
-    while (openParen > closeParen) { s += ')'; closeParen++; }
-    while (openBrace > closeBrace) { s += '}'; closeBrace++; }
-    return s;
+    try {
+        const node = math.parse(expr);
+        let tex = node.toTex({ parenthesis: 'keep' });
+        tex = tex.replace(/\\cdot\s*/g, '');
+        return tex;
+    } catch(e) {
+        let s = expr;
+        s = s.replace(/\^/g, '^');
+        s = s.replace(/sin\(/g, '\\sin(');
+        s = s.replace(/cos\(/g, '\\cos(');
+        s = s.replace(/tan\(/g, '\\tan(');
+        s = s.replace(/asin\(/g, '\\sin^{-1}(');
+        s = s.replace(/acos\(/g, '\\cos^{-1}(');
+        s = s.replace(/atan\(/g, '\\tan^{-1}(');
+        s = s.replace(/log10\(/g, '\\log_{10}(');
+        s = s.replace(/ln\(/g, '\\ln(');
+        s = s.replace(/log\(/g, '\\ln(');
+        s = s.replace(/sqrt\(/g, '\\sqrt{');
+        s = s.replace(/abs\(/g, '\\left|');
+        s = s.replace(/exp\(/g, 'e^{');
+        s = s.replace(/\bpi\b/gi, '\\pi ');
+        s = s.replace(/\*/g, '');
+        s = s.replace(/\//g, '}{');
+        if (s.includes('}{')) {
+            let parts = s.split('}{');
+            if (parts.length === 2) {
+                s = '\\frac{' + parts[0] + '}{' + parts[1] + '}';
+            }
+        }
+        let openParen = (s.match(/\(/g) || []).length;
+        let closeParen = (s.match(/\)/g) || []).length;
+        let openBrace = (s.match(/\{/g) || []).length;
+        let closeBrace = (s.match(/\}/g) || []).length;
+        while (openParen > closeParen) { s += ')'; closeParen++; }
+        while (openBrace > closeBrace) { s += '}'; closeBrace++; }
+        return s;
+    }
 }
 
 function runCalculation() {
-    const expr = document.getElementById('funcInput').value.trim();
+    const raw = document.getElementById('funcInput').value.trim();
 
-    if (!expr) {
+    if (!raw) {
         document.getElementById('result').innerHTML = '<span style="color:#c00;">Please enter a function expression.</span>';
         document.getElementById('bendingPoints').innerHTML = '';
         document.getElementById('derivDisplay').innerHTML = '';
         return;
     }
+
+    const expr = fixInput(raw);
 
     if (!checkIfExpr(expr)) {
         document.getElementById('result').innerHTML = '<span style="color:#c00;">Invalid expression.</span>';
@@ -690,6 +726,29 @@ document.getElementById('calcBtn').addEventListener('click', runCalculation);
 document.getElementById('funcInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') runCalculation();
 });
+
+function updatePreview() {
+    const raw = document.getElementById('funcInput').value.trim();
+    const preview = document.getElementById('livePreview');
+    if (!raw) { preview.innerHTML = ''; return; }
+    const expr = fixInput(raw);
+    try {
+        math.compile(expr).evaluate({x: 0});
+        if (typeof katex !== 'undefined') {
+            preview.innerHTML = katex.renderToString('\\displaystyle f(x) = ' + exprToLatex(expr), { displayMode: false });
+        } else {
+            preview.textContent = 'f(x) = ' + expr;
+        }
+    } catch(e) {
+        if (typeof katex !== 'undefined') {
+            preview.innerHTML = katex.renderToString('\\displaystyle f(x) = \\text{' + raw.replace(/</g,'').replace(/>/g,'') + '}', { displayMode: false });
+        } else {
+            preview.textContent = 'f(x) = ' + raw;
+        }
+    }
+}
+
+document.getElementById('funcInput').addEventListener('input', updatePreview);
 
 runCalculation();
 </script>

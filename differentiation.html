@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differentiation Calculator</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.0.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        body {
+            font-family: 'Lora', serif;
+            background-color: #f5f5ef;
+            color: #000;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #000;
+        }
+        .form-control {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 1px solid black;
+        }
+        .form-control:focus {
+            background-color: #f5f5ef;
+            border-color: #000;
+            box-shadow: none;
+        }
+        .btn-success {
+            background-color: #000;
+            border-color: #000;
+        }
+        .btn-success:hover {
+            background-color: #333;
+            border-color: #333;
+        }
+        .result-box {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #000;
+        }
+        .result-box table {
+            width: 100%;
+            color: #000;
+        }
+        .result-box table th {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 2px solid black !important;
+            text-align: center;
+            font-weight: bold;
+        }
+        .result-box table td {
+            background-color: #f5f5ef;
+            color: #000;
+            border: 2px solid black !important;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 1.3rem;
+        }
+        .result-box .katex { font-size: 1.1em; }
+    </style>
+</head>
+<body>
+
+<style>@media (max-width:768px){.nav-buttons{justify-content:center}}</style>
+<div class="nav-buttons" style="padding: 10px 20px; display: flex; gap: 10px; font-family: 'Lora', serif; border-bottom: 1px solid #ccc; margin-bottom: 20px;">
+    <a href="index.html" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Home</a>
+    <a href="index.html#pricing" style="background: #f5f5ef; color: black; padding: 6px 22px; border-radius: 6px; text-decoration: none; font-size: 1.26rem; border: 1px solid #f5f5ef;">Methods</a>
+</div>
+
+<div class="container">
+    <h1>Differentiation Calculator</h1>
+
+    <div class="form-row">
+        <div class="form-group col-md-8 offset-md-2" style="display:flex; align-items:center; gap:10px;">
+            <label style="margin-bottom:0; white-space:nowrap; font-weight:600; font-size:1.2rem;">y =</label>
+            <input type="text" id="funcInput" class="form-control" value="x^3 - 3*x" placeholder="e.g. x^3 - 3*x, sin(x), x^4 - 8*x^2">
+            <button class="btn btn-success" id="calcBtn" style="white-space:nowrap;">Calculate</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8 offset-md-2" style="margin-top:5px;">
+            <div id="livePreview" class="form-text" style="text-align:center; font-size:1.3rem;"></div>
+        </div>
+    </div>
+
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+function fixInput(s) {
+    s = s.replace(/\s+/g, '');
+    s = s.replace(/\)\(/g, ')*(');
+    s = s.replace(/(\d)(\()/g, '$1*$2');
+    s = s.replace(/(\))(\d)/g, '$1*$2');
+    s = s.replace(/(\d)(x)/g, '$1*$2');
+    s = s.replace(/(\d)(pi)/g, '$1*$2');
+    s = s.replace(/(x)(\()/g, '$1*$2');
+    s = s.replace(/(x)(x)/g, '$1*$2');
+    s = s.replace(/(x)(sin|cos|tan|log|ln|sqrt|abs|exp)/g, '$1*$2');
+    s = s.replace(/(pi)(x)/g, '$1*$2');
+    s = s.replace(/(pi)(sin|cos|tan|log|ln|sqrt|abs|exp)/g, '$1*$2');
+    return s;
+}
+
+function mathToLatex(s) {
+    try {
+        const node = math.parse(s);
+        let tex = node.toTex({ parenthesis: 'keep' });
+        tex = tex.replace(/\\cdot\s*/g, '');
+        return tex;
+    } catch(e) {
+        return s;
+    }
+}
+
+function runCalculation() {
+    const raw = document.getElementById('funcInput').value.trim();
+
+    if (!raw) {
+        document.getElementById('result').innerHTML = '<span style="color:#c00;">Please enter a function expression.</span>';
+        return;
+    }
+
+    const expr = fixInput(raw);
+
+    let node;
+    try { node = math.parse(expr); math.compile(expr).evaluate({x: 0}); }
+    catch(e) {
+        document.getElementById('result').innerHTML = '<span style="color:#c00;">Invalid expression: ' + e.message + '</span>';
+        return;
+    }
+
+    let html = '';
+    const maxDerivatives = 10;
+    let current = math.parse(expr);
+    let foundZero = false;
+
+    function derivLabel(n) {
+        if (n === 1) return "\\frac{dy}{dx}";
+        if (n === 2) return "\\frac{d^{2}y}{dx^{2}}";
+        if (n === 3) return "\\frac{d^{3}y}{dx^{3}}";
+        return '\\frac{d^{' + n + '}y}{dx^{' + n + '}}';
+    }
+
+    if (typeof katex !== 'undefined') {
+        html += '<table class="table table-bordered">';
+        html += '<thead><tr><th>Derivative</th><th>Result</th></tr></thead><tbody>';
+
+        for (let i = 1; i <= maxDerivatives; i++) {
+            let derivExpr;
+            try {
+                derivExpr = math.derivative(current, 'x');
+            } catch(e) { break; }
+
+            let simplified;
+            try { simplified = math.simplify(derivExpr).toString(); }
+            catch(e) { simplified = derivExpr.toString(); }
+
+            const labelTex = katex.renderToString('\\displaystyle ' + derivLabel(i), { displayMode: false });
+            let resultTex;
+            try { resultTex = katex.renderToString('\\displaystyle ' + mathToLatex(simplified), { displayMode: false }); }
+            catch(e) { resultTex = simplified; }
+
+            html += '<tr><td>' + labelTex + '</td><td>' + resultTex + '</td></tr>';
+
+            if (simplified === '0') { foundZero = true; break; }
+
+            try {
+                const parsed = math.parse(simplified);
+                if (parsed.type === 'ConstantNode' && parsed.value === 0) { foundZero = true; break; }
+            } catch(e) {}
+
+            current = derivExpr;
+        }
+
+        html += '</tbody></table>';
+    } else {
+        html += '<table class="table table-bordered">';
+        html += '<thead><tr><th>Derivative</th><th>Result</th></tr></thead><tbody>';
+
+        for (let i = 1; i <= maxDerivatives; i++) {
+            let derivExpr;
+            try { derivExpr = math.derivative(current, 'x'); }
+            catch(e) { break; }
+
+            let simplified;
+            try { simplified = math.simplify(derivExpr).toString(); }
+            catch(e) { simplified = derivExpr.toString(); }
+
+            html += '<tr><td>' + derivLabel(i) + '</td><td>' + simplified + '</td></tr>';
+
+            if (simplified === '0') { foundZero = true; break; }
+
+            try {
+                const parsed = math.parse(simplified);
+                if (parsed.type === 'ConstantNode' && parsed.value === 0) { foundZero = true; break; }
+            } catch(e) {}
+
+            current = derivExpr;
+        }
+
+        html += '</tbody></table>';
+    }
+
+    document.getElementById('result').innerHTML = html;
+}
+
+document.getElementById('calcBtn').addEventListener('click', runCalculation);
+document.getElementById('funcInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runCalculation();
+});
+
+function updatePreview() {
+    const raw = document.getElementById('funcInput').value.trim();
+    const preview = document.getElementById('livePreview');
+    if (!raw) { preview.innerHTML = ''; return; }
+    const expr = fixInput(raw);
+    try {
+        math.compile(expr).evaluate({x: 0});
+        if (typeof katex !== 'undefined') {
+            preview.innerHTML = katex.renderToString('\\displaystyle y = ' + mathToLatex(expr), { displayMode: false });
+        } else {
+            preview.textContent = 'y = ' + expr;
+        }
+    } catch(e) {
+        if (typeof katex !== 'undefined') {
+            preview.innerHTML = katex.renderToString('\\displaystyle y = \\text{' + raw.replace(/</g,'').replace(/>/g,'') + '}', { displayMode: false });
+        } else {
+            preview.textContent = 'y = ' + raw;
+        }
+    }
+}
+
+document.getElementById('funcInput').addEventListener('input', updatePreview);
+
+runCalculation();
+</script>
+
+</body>
+</html>
