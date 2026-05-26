@@ -73,7 +73,7 @@
         }
         .chart-container {
             position: relative;
-            margin-top: 20px;
+            margin-top: 40px;
             display: none;
         }
     </style>
@@ -110,7 +110,7 @@
     </form>
 
     <div class="chart-container">
-        <div style="position:absolute;top:-14px;right:8px;z-index:10;display:flex;gap:4px;">
+        <div style="position:absolute;top:-10px;right:8px;z-index:10;display:flex;gap:4px;">
             <button class="btn btn-success btn-sm zoom-btn" id="zoomInBtn">&#43;</button>
             <button class="btn btn-secondary btn-sm zoom-btn" id="zoomOutBtn">&minus;</button>
             <button class="btn btn-secondary btn-sm zoom-btn" id="zoomResetBtn">&#8634;</button>
@@ -279,12 +279,30 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
     const linesPlugin = {
         id: 'linesPlugin',
         afterDraw(chart) {
-            if (!iterPoints || iterPoints.length === 0) return;
             const ctx = chart.ctx;
             const xScale = chart.scales.x;
             const yScale = chart.scales.y;
             if (!xScale || !yScale) return;
             ctx.save();
+            const x0 = xScale.getPixelForValue(0);
+            const y0 = yScale.getPixelForValue(0);
+            const ca = chart.chartArea;
+            ctx.beginPath();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+            ctx.lineWidth = 1;
+            if (isFinite(y0)) { ctx.moveTo(ca.left, y0); ctx.lineTo(ca.right, y0); }
+            if (isFinite(x0)) { ctx.moveTo(x0, ca.top); ctx.lineTo(x0, ca.bottom); }
+            ctx.stroke();
+            ctx.font = '14px Lora';
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('f(x)', (ca.left + ca.right) / 2, ca.top - 4);
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'left';
+            ctx.fillText('x', ca.right + 6, (ca.top + ca.bottom) / 2);
+            if (!iterPoints || iterPoints.length === 0) { ctx.restore(); return; }
             const h = 1e-5;
             for (const dp of iterPoints) {
                 if (!dp || !isFinite(dp.x) || !isFinite(dp.y)) continue;
@@ -374,31 +392,36 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
             type: 'scatter',
             data: {datasets},
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
                 aspectRatio: 16/9,
                 maintainAspectRatio: true,
+                layout: {
+                    padding: {
+                        right: 20
+                    }
+                },
                 scales: {
                     x: {
                         type: 'linear',
                         title: {display: true, text: 'x', align: 'end'},
                         grid: {color: 'rgba(0,0,0,0.1)'},
                         min: viewMin,
-                        max: viewMax,
-                        position: 'center'
+                        max: viewMax
                     },
                     y: {
                         title: {display: false},
                         grid: {color: 'rgba(0,0,0,0.1)'},
                         min: -zoomRange + panOffsetY,
-                        max: zoomRange + panOffsetY,
-                        position: 'center'
+                        max: zoomRange + panOffsetY
                     }
                 },
                 plugins: {
                     legend: {
+                        align: 'start',
                         labels: {
                             font: {family: 'Lora'}
+                        },
+                        padding: {
+                            left: 20
                         }
                     }
                 }

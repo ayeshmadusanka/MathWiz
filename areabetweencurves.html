@@ -415,10 +415,14 @@ function plotCurves(expr1, expr2) {
             },
             plugins: {
                 legend: {
+                    align: 'start',
                     labels: {
                         font: { family: 'Lora' },
                         usePointStyle: true,
                         pointStyle: 'line'
+                    },
+                    padding: {
+                        left: 20
                     }
                 },
                 tooltip: {
