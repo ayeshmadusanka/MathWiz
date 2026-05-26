@@ -163,7 +163,6 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
     tbody.innerHTML = '';  // Clear previous results
     document.querySelector('.table-container').style.display = 'block';
 
-    let previousX = xOld;
     let rootFound = false;
     const iterPoints = [{x: xOld, y: f.evaluate({x: xOld})}];
 
@@ -183,7 +182,7 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
         }
 
         const xNew = xOld - fValue / derivativeValue;
-        const error = Math.abs(xNew - previousX);
+        const error = Math.abs(xNew - xOld);
 
         // Insert a new row into the table
         const row = tbody.insertRow();
@@ -204,7 +203,6 @@ document.getElementById('newtonForm').addEventListener('submit', function(e) {
         }
 
         // Update xOld for the next iteration
-        previousX = xOld;
         xOld = xNew;
     }
 
