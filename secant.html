@@ -66,6 +66,17 @@
         .table-bordered, .table-bordered th, .table-bordered td {
             border: 2px solid black !important;
         }
+        .zoom-btn {
+            font-size: 1.1rem;
+            font-weight: bold;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .chart-container {
             position: relative;
             margin-top: 20px;
@@ -109,6 +120,11 @@
     </form>
 
     <div class="chart-container">
+        <div style="position:absolute;top:-14px;right:8px;z-index:10;display:flex;gap:4px;">
+            <button class="btn btn-success btn-sm zoom-btn" id="zoomInBtn">&#43;</button>
+            <button class="btn btn-secondary btn-sm zoom-btn" id="zoomOutBtn">&minus;</button>
+            <button class="btn btn-secondary btn-sm zoom-btn" id="zoomResetBtn">&#8634;</button>
+        </div>
         <canvas id="functionChart"></canvas>
     </div>
 
@@ -212,6 +228,27 @@ document.getElementById('function').addEventListener('input', function() {
 });
 
 let chartInstance = null;
+let zoomRange = 10;
+let defaultZoomRange = 10;
+let currentFuncStr = '';
+let panOffsetX = 0;
+let panOffsetY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
+function evaluatePoints(expr, xMin, xMax, steps) {
+    const f = math.compile(expr);
+    const points = [];
+    const step = (xMax - xMin) / steps;
+    for (let x = xMin; x <= xMax + step / 2; x += step) {
+        try {
+            const y = f.evaluate({x});
+            if (isFinite(y)) points.push({x, y});
+        } catch(e) {}
+    }
+    return points;
+}
 
 function plotFunction(funcStr, iterPoints, rootFound, finalX) {
     const ctx = document.getElementById('functionChart').getContext('2d');
@@ -219,6 +256,7 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
     container.style.display = 'block';
 
     const rootX = rootFound ? finalX : null;
+    currentFuncStr = funcStr;
     const f = math.compile(funcStr);
 
     let range = 10;
@@ -228,19 +266,13 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
         const maxAbs = Math.max(...allXs.map(Math.abs), 1);
         range = Math.max(10, Math.ceil(maxAbs * 1.5));
     }
-    const xMin = -range;
-    const xMax = range;
-    const yMin = -range;
-    const yMax = range;
-
-    const curvePoints = [];
-    const step = (xMax - xMin) / 200;
-    for (let x = xMin; x <= xMax; x += step) {
-        try {
-            const y = f.evaluate({x});
-            if (isFinite(y)) curvePoints.push({x, y});
-        } catch(e) {}
-    }
+    zoomRange = range;
+    panOffsetX = 0;
+    panOffsetY = 0;
+    defaultZoomRange = range;
+    const viewMin = -zoomRange + panOffsetX;
+    const viewMax = zoomRange + panOffsetX;
+    const curvePoints = evaluatePoints(currentFuncStr, viewMin, viewMax, 200);
 
     if (chartInstance) chartInstance.destroy();
 
@@ -266,6 +298,7 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
             pointStyle: 'circle',
             showLine: false
         });
+
     }
 
     if (rootX !== null) {
@@ -281,6 +314,60 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
         });
     }
 
+
+
+    const linesPlugin = {
+        id: 'linesPlugin',
+        afterDraw(chart) {
+            if (!iterPoints || iterPoints.length === 0) return;
+            const ctx = chart.ctx;
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            if (!xScale || !yScale) return;
+            ctx.save();
+            const h = 1e-5;
+            for (const dp of iterPoints) {
+                if (!dp || !isFinite(dp.x) || !isFinite(dp.y)) continue;
+                const px = xScale.getPixelForValue(dp.x);
+                const py = yScale.getPixelForValue(dp.y);
+                const py0 = yScale.getPixelForValue(0);
+                if (!isFinite(px) || !isFinite(py) || !isFinite(py0)) continue;
+                ctx.beginPath();
+                ctx.setLineDash([6, 4]);
+                ctx.moveTo(px, py);
+                ctx.lineTo(px, py0);
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                try {
+                    const slope = (f.evaluate({x: dp.x + h}) - f.evaluate({x: dp.x - h})) / (2 * h);
+                    if (isFinite(slope)) {
+                        const span = zoomRange / 2.5;
+                        const x1 = dp.x - span;
+                        const x2 = dp.x + span;
+                        const y1 = dp.y + slope * (x1 - dp.x);
+                        const y2 = dp.y + slope * (x2 - dp.x);
+                        const p1x = xScale.getPixelForValue(x1);
+                        const p1y = yScale.getPixelForValue(y1);
+                        const p2x = xScale.getPixelForValue(x2);
+                        const p2y = yScale.getPixelForValue(y2);
+                        if (!isFinite(p1x) || !isFinite(p1y) || !isFinite(p2x) || !isFinite(p2y)) continue;
+                        ctx.beginPath();
+                        ctx.setLineDash([]);
+                        ctx.moveTo(p1x, p1y);
+                        ctx.lineTo(p2x, p2y);
+                        ctx.strokeStyle = 'rgba(200,50,50,0.7)';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                } catch(e) {}
+            }
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+    };
+    Chart.register(linesPlugin);
+
     try {
         chartInstance = new Chart(ctx, {
             type: 'scatter',
@@ -295,15 +382,15 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
                         type: 'linear',
                         title: {display: true, text: 'x', align: 'end'},
                         grid: {color: 'rgba(0,0,0,0.1)'},
-                        min: xMin,
-                        max: xMax,
+                        min: viewMin,
+                        max: viewMax,
                         position: 'center'
                     },
                     y: {
                         title: {display: false},
                         grid: {color: 'rgba(0,0,0,0.1)'},
-                        min: yMin,
-                        max: yMax,
+                        min: -zoomRange + panOffsetY,
+                        max: zoomRange + panOffsetY,
                         position: 'center'
                     }
                 },
@@ -320,6 +407,68 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
         console.error('Chart error:', e);
     }
 }
+
+function applyZoom() {
+    if (!chartInstance) return;
+    const viewMin = -zoomRange + panOffsetX;
+    const viewMax = zoomRange + panOffsetX;
+    if (currentFuncStr) {
+        chartInstance.data.datasets[0].data = evaluatePoints(currentFuncStr, viewMin, viewMax, 200);
+    }
+    chartInstance.options.scales.x.min = viewMin;
+    chartInstance.options.scales.x.max = viewMax;
+    chartInstance.options.scales.y.min = -zoomRange + panOffsetY;
+    chartInstance.options.scales.y.max = zoomRange + panOffsetY;
+    chartInstance.update();
+}
+
+document.getElementById('zoomInBtn').addEventListener('click', () => {
+    zoomRange = Math.max(zoomRange * 0.7, 0.5);
+    applyZoom();
+});
+
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+    zoomRange = Math.min(zoomRange / 0.7, 50);
+    applyZoom();
+});
+
+document.getElementById('zoomResetBtn').addEventListener('click', () => {
+    zoomRange = defaultZoomRange;
+    panOffsetX = 0;
+    panOffsetY = 0;
+    applyZoom();
+});
+
+const canvas = document.getElementById('functionChart');
+canvas.style.cursor = 'crosshair';
+canvas.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+});
+document.addEventListener('mousemove', function(e) {
+    if (!isDragging || !chartInstance) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const xScale = chartInstance.scales.x;
+    const yScale = chartInstance.scales.y;
+    if (xScale && yScale) {
+        const pxPerUnitX = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
+        const pxPerUnitY = yScale.getPixelForValue(1) - yScale.getPixelForValue(0);
+        panOffsetX -= dx / pxPerUnitX;
+        panOffsetY += dy / pxPerUnitY;
+    }
+    applyZoom();
+});
+document.addEventListener('mouseup', function() {
+    if (isDragging) {
+        isDragging = false;
+        canvas.style.cursor = 'crosshair';
+    }
+});
 </script>
 
 
