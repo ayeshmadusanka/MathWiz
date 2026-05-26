@@ -186,7 +186,7 @@
     <div id="derivDisplay" class="derivative-display"></div>
 
     <div class="chart-container" id="chartContainer">
-        <div style="position:absolute; top:-14px; right:8px; z-index:10; display:flex; gap:4px;">
+        <div style="position:absolute;top:-10px;right:8px;z-index:10;display:flex;gap:4px;">
             <button class="btn btn-success btn-sm zoom-btn" id="zoomInBtn">&#43;</button>
             <button class="btn btn-secondary btn-sm zoom-btn" id="zoomOutBtn">&minus;</button>
             <button class="btn btn-secondary btn-sm zoom-btn" id="zoomResetBtn">&#8634;</button>
@@ -497,6 +497,84 @@ const markerPlugin = {
 
         ctx.setLineDash([]);
         ctx.restore();
+    },
+    afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        if (!xScale || !yScale) return;
+        ctx.save();
+        const x0 = xScale.getPixelForValue(0);
+        const y0 = yScale.getPixelForValue(0);
+        const ca = chart.chartArea;
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 1;
+        if (isFinite(y0)) { ctx.moveTo(ca.left, y0); ctx.lineTo(ca.right, y0); }
+        if (isFinite(x0)) { ctx.moveTo(x0, ca.top); ctx.lineTo(x0, ca.bottom); }
+        ctx.stroke();
+        ctx.font = '14px Lora';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('f(x)', (ca.left + ca.right) / 2, ca.top - 4);
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.fillText('x', ca.right + 6, (ca.top + ca.bottom) / 2);
+        ctx.font = '11px Lora';
+        ctx.fillStyle = '#000';
+        if (isFinite(y0)) {
+            const r = xScale.max - xScale.min;
+            const lo = Math.ceil(xScale.min);
+            const hi = Math.floor(xScale.max);
+            const cnt = hi - lo + 1;
+            let step, first;
+            if (cnt >= 3 && cnt <= 40) {
+                step = 1; first = lo;
+            } else {
+                const raw = r / 10;
+                const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-15))));
+                const norm = raw / mag;
+                step = norm <= 1.5 ? mag : norm <= 3.5 ? 2 * mag : norm <= 7.5 ? 5 * mag : 10 * mag;
+                first = Math.ceil(xScale.min / step) * step;
+            }
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let v = first; v <= xScale.max; v += step) {
+                if (Math.abs(v) < 1e-10) continue;
+                const px = xScale.getPixelForValue(v);
+                if (px >= ca.left && px <= ca.right) {
+                    ctx.fillText(Number.isInteger(v) ? v.toString() : v.toFixed(2), px, y0 + 3);
+                }
+            }
+        }
+        if (isFinite(x0)) {
+            const r = yScale.max - yScale.min;
+            const lo = Math.ceil(yScale.min);
+            const hi = Math.floor(yScale.max);
+            const cnt = hi - lo + 1;
+            let step, first;
+            if (cnt >= 3 && cnt <= 40) {
+                step = 1; first = lo;
+            } else {
+                const raw = r / 10;
+                const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-15))));
+                const norm = raw / mag;
+                step = norm <= 1.5 ? mag : norm <= 3.5 ? 2 * mag : norm <= 7.5 ? 5 * mag : 10 * mag;
+                first = Math.ceil(yScale.min / step) * step;
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let v = first; v <= yScale.max; v += step) {
+                if (Math.abs(v) < 1e-10) continue;
+                const py = yScale.getPixelForValue(v);
+                if (py >= ca.top && py <= ca.bottom) {
+                    ctx.fillText(Number.isInteger(v) ? v.toString() : v.toFixed(2), x0 - 4, py);
+                }
+            }
+        }
+        ctx.restore();
     }
 };
 
@@ -575,21 +653,26 @@ function plotCurves(fExpr, fPrimeExpr, fDoublePrimeExpr) {
             responsive: true,
             maintainAspectRatio: true,
             aspectRatio: 16 / 9,
+            layout: {
+                padding: {
+                    right: 20
+                }
+            },
                 scales: {
                     x: {
                         type: 'linear',
-                        title: { display: true, text: 'x', align: 'end' },
                         grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: {display: false},
+                        border: {display: false},
                         min: -zoomRange + panOffsetX,
-                        max: zoomRange + panOffsetX,
-                        position: 'center'
+                        max: zoomRange + panOffsetX
                     },
                     y: {
-                        title: { display: false },
                         grid: { color: 'rgba(0,0,0,0.1)' },
+                        ticks: {display: false},
+                        border: {display: false},
                         min: -zoomRange + panOffsetY,
-                        max: zoomRange + panOffsetY,
-                        position: 'center'
+                        max: zoomRange + panOffsetY
                     }
                 },
                 plugins: {
@@ -630,15 +713,9 @@ function applyZoom() {
     }
     chartInstance.options.scales.x.min = viewMin;
     chartInstance.options.scales.x.max = viewMax;
-    chartInstance.options.scales.x.position = 'center';
     chartInstance.options.scales.y.min = -zoomRange + panOffsetY;
     chartInstance.options.scales.y.max = zoomRange + panOffsetY;
-    chartInstance.options.scales.y.position = 'center';
     chartInstance.update();
-    // Force axis position recalculation
-    if (chartInstance.scales.x) chartInstance.scales.x.options.position = 'center';
-    if (chartInstance.scales.y) chartInstance.scales.y.options.position = 'center';
-    chartInstance.render();
 }
 
 document.getElementById('zoomInBtn').addEventListener('click', () => {

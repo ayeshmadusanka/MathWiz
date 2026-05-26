@@ -142,7 +142,7 @@
 
 
     <div class="chart-container" id="chartContainer">
-        <div style="position:absolute; top:-14px; right:8px; z-index:10; display:flex; gap:4px;">
+        <div style="position:absolute;top:-10px;right:8px;z-index:10;display:flex;gap:4px;">
             <button class="btn btn-success btn-sm zoom-btn" id="zoomInBtn">&#43;</button>
             <button class="btn btn-secondary btn-sm zoom-btn" id="zoomOutBtn">&minus;</button>
             <button class="btn btn-secondary btn-sm zoom-btn" id="zoomResetBtn">&#8634;</button>
@@ -160,8 +160,15 @@
 let chartInstance = null;
 let currentSegments = [];
 let currentRoots = [];
+let currentExpr1 = '';
+let currentExpr2 = '';
 let zoomRange = 10;
-const defaultZoomRange = 10;
+let defaultZoomRange = 10;
+let panOffsetX = 0;
+let panOffsetY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
 
 function evaluatePoints(expr, xMin, xMax, steps) {
     const f = math.compile(expr);
@@ -357,14 +364,96 @@ const fillPlugin = {
             ctx.restore();
         }
         ctx.restore();
+    },
+    afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        if (!xScale || !yScale) return;
+        ctx.save();
+        const x0 = xScale.getPixelForValue(0);
+        const y0 = yScale.getPixelForValue(0);
+        const ca = chart.chartArea;
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 1;
+        if (isFinite(y0)) { ctx.moveTo(ca.left, y0); ctx.lineTo(ca.right, y0); }
+        if (isFinite(x0)) { ctx.moveTo(x0, ca.top); ctx.lineTo(x0, ca.bottom); }
+        ctx.stroke();
+        ctx.font = '14px Lora';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('f(x)', (ca.left + ca.right) / 2, ca.top - 4);
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.fillText('x', ca.right + 6, (ca.top + ca.bottom) / 2);
+        ctx.font = '11px Lora';
+        ctx.fillStyle = '#000';
+        if (isFinite(y0)) {
+            const r = xScale.max - xScale.min;
+            const lo = Math.ceil(xScale.min);
+            const hi = Math.floor(xScale.max);
+            const cnt = hi - lo + 1;
+            let step, first;
+            if (cnt >= 3 && cnt <= 40) {
+                step = 1; first = lo;
+            } else {
+                const raw = r / 10;
+                const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-15))));
+                const norm = raw / mag;
+                step = norm <= 1.5 ? mag : norm <= 3.5 ? 2 * mag : norm <= 7.5 ? 5 * mag : 10 * mag;
+                first = Math.ceil(xScale.min / step) * step;
+            }
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let v = first; v <= xScale.max; v += step) {
+                if (Math.abs(v) < 1e-10) continue;
+                const px = xScale.getPixelForValue(v);
+                if (px >= ca.left && px <= ca.right) {
+                    ctx.fillText(Number.isInteger(v) ? v.toString() : v.toFixed(2), px, y0 + 3);
+                }
+            }
+        }
+        if (isFinite(x0)) {
+            const r = yScale.max - yScale.min;
+            const lo = Math.ceil(yScale.min);
+            const hi = Math.floor(yScale.max);
+            const cnt = hi - lo + 1;
+            let step, first;
+            if (cnt >= 3 && cnt <= 40) {
+                step = 1; first = lo;
+            } else {
+                const raw = r / 10;
+                const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-15))));
+                const norm = raw / mag;
+                step = norm <= 1.5 ? mag : norm <= 3.5 ? 2 * mag : norm <= 7.5 ? 5 * mag : 10 * mag;
+                first = Math.ceil(yScale.min / step) * step;
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let v = first; v <= yScale.max; v += step) {
+                if (Math.abs(v) < 1e-10) continue;
+                const py = yScale.getPixelForValue(v);
+                if (py >= ca.top && py <= ca.bottom) {
+                    ctx.fillText(Number.isInteger(v) ? v.toString() : v.toFixed(2), x0 - 4, py);
+                }
+            }
+        }
+        ctx.restore();
     }
 };
 
 function plotCurves(expr1, expr2) {
+    currentExpr1 = expr1;
+    currentExpr2 = expr2;
     const ctx = document.getElementById('functionChart').getContext('2d');
     const steps = 500;
-    const pts1 = evaluatePoints(expr1, -10, 10, steps);
-    const pts2 = evaluatePoints(expr2, -10, 10, steps);
+    const viewMin = -zoomRange + panOffsetX;
+    const viewMax = zoomRange + panOffsetX;
+    const pts1 = evaluatePoints(expr1, viewMin, viewMax, steps);
+    const pts2 = evaluatePoints(expr2, viewMin, viewMax, steps);
 
     if (chartInstance) chartInstance.destroy();
 
@@ -396,21 +485,26 @@ function plotCurves(expr1, expr2) {
             responsive: true,
             maintainAspectRatio: true,
             aspectRatio: 16 / 9,
+            layout: {
+                padding: {
+                    right: 20
+                }
+            },
             scales: {
                 x: {
                     type: 'linear',
-                    title: { display: true, text: 'x', align: 'end' },
                     grid: { color: 'rgba(0,0,0,0.1)' },
-                    min: -zoomRange,
-                    max: zoomRange,
-                    position: 'center'
+                    ticks: {display: false},
+                    border: {display: false},
+                    min: -zoomRange + panOffsetX,
+                    max: zoomRange + panOffsetX
                 },
                 y: {
-                    title: { display: false },
                     grid: { color: 'rgba(0,0,0,0.1)' },
-                    min: -zoomRange,
-                    max: zoomRange,
-                    position: 'center'
+                    ticks: {display: false},
+                    border: {display: false},
+                    min: -zoomRange + panOffsetY,
+                    max: zoomRange + panOffsetY
                 }
             },
             plugins: {
@@ -440,11 +534,19 @@ function plotCurves(expr1, expr2) {
 
 function applyZoom() {
     if (!chartInstance) return;
-    const opts = chartInstance.options;
-    opts.scales.x.min = -zoomRange;
-    opts.scales.x.max = zoomRange;
-    opts.scales.y.min = -zoomRange;
-    opts.scales.y.max = zoomRange;
+    const viewMin = -zoomRange + panOffsetX;
+    const viewMax = zoomRange + panOffsetX;
+    const steps = 500;
+    if (currentExpr1) {
+        chartInstance.data.datasets[0].data = evaluatePoints(currentExpr1, viewMin, viewMax, steps);
+    }
+    if (currentExpr2) {
+        chartInstance.data.datasets[1].data = evaluatePoints(currentExpr2, viewMin, viewMax, steps);
+    }
+    chartInstance.options.scales.x.min = viewMin;
+    chartInstance.options.scales.x.max = viewMax;
+    chartInstance.options.scales.y.min = -zoomRange + panOffsetY;
+    chartInstance.options.scales.y.max = zoomRange + panOffsetY;
     chartInstance.update();
 }
 
@@ -460,7 +562,40 @@ document.getElementById('zoomOutBtn').addEventListener('click', () => {
 
 document.getElementById('zoomResetBtn').addEventListener('click', () => {
     zoomRange = defaultZoomRange;
+    panOffsetX = 0;
+    panOffsetY = 0;
     applyZoom();
+});
+
+const canvas = document.getElementById('functionChart');
+canvas.style.cursor = 'crosshair';
+canvas.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+});
+document.addEventListener('mousemove', function(e) {
+    if (!isDragging || !chartInstance) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const xScale = chartInstance.scales.x;
+    const yScale = chartInstance.scales.y;
+    if (xScale && yScale) {
+        const pxPerUnitX = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
+        const pxPerUnitY = yScale.getPixelForValue(1) - yScale.getPixelForValue(0);
+        panOffsetX -= dx / pxPerUnitX;
+        panOffsetY += dy / pxPerUnitY;
+    }
+    applyZoom();
+});
+document.addEventListener('mouseup', function() {
+    if (isDragging) {
+        isDragging = false;
+        canvas.style.cursor = 'crosshair';
+    }
 });
 
 function runCalculation() {

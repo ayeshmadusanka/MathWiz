@@ -352,6 +352,58 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
             ctx.fillText('x', ca.right + 6, (ca.top + ca.bottom) / 2);
+            ctx.font = '11px Lora';
+            ctx.fillStyle = '#000';
+            if (isFinite(y0)) {
+                const r = xScale.max - xScale.min;
+                const lo = Math.ceil(xScale.min);
+                const hi = Math.floor(xScale.max);
+                const cnt = hi - lo + 1;
+                let step, first;
+                if (cnt >= 3 && cnt <= 40) {
+                    step = 1; first = lo;
+                } else {
+                    const raw = r / 10;
+                    const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-15))));
+                    const norm = raw / mag;
+                    step = norm <= 1.5 ? mag : norm <= 3.5 ? 2 * mag : norm <= 7.5 ? 5 * mag : 10 * mag;
+                    first = Math.ceil(xScale.min / step) * step;
+                }
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                for (let v = first; v <= xScale.max; v += step) {
+                    if (Math.abs(v) < 1e-10) continue;
+                    const px = xScale.getPixelForValue(v);
+                    if (px >= ca.left && px <= ca.right) {
+                        ctx.fillText(Number.isInteger(v) ? v.toString() : v.toFixed(2), px, y0 + 3);
+                    }
+                }
+            }
+            if (isFinite(x0)) {
+                const r = yScale.max - yScale.min;
+                const lo = Math.ceil(yScale.min);
+                const hi = Math.floor(yScale.max);
+                const cnt = hi - lo + 1;
+                let step, first;
+                if (cnt >= 3 && cnt <= 40) {
+                    step = 1; first = lo;
+                } else {
+                    const raw = r / 10;
+                    const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-15))));
+                    const norm = raw / mag;
+                    step = norm <= 1.5 ? mag : norm <= 3.5 ? 2 * mag : norm <= 7.5 ? 5 * mag : 10 * mag;
+                    first = Math.ceil(yScale.min / step) * step;
+                }
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let v = first; v <= yScale.max; v += step) {
+                    if (Math.abs(v) < 1e-10) continue;
+                    const py = yScale.getPixelForValue(v);
+                    if (py >= ca.top && py <= ca.bottom) {
+                        ctx.fillText(Number.isInteger(v) ? v.toString() : v.toFixed(2), x0 - 4, py);
+                    }
+                }
+            }
             if (!iterPoints || iterPoints.length === 0) { ctx.restore(); return; }
             const h = 1e-5;
             for (const dp of iterPoints) {
@@ -411,14 +463,16 @@ function plotFunction(funcStr, iterPoints, rootFound, finalX) {
                 scales: {
                     x: {
                         type: 'linear',
-                        title: {display: true, text: 'x', align: 'end'},
                         grid: {color: 'rgba(0,0,0,0.1)'},
+                        ticks: {display: false},
+                        border: {display: false},
                         min: viewMin,
                         max: viewMax
                     },
                     y: {
-                        title: {display: false},
                         grid: {color: 'rgba(0,0,0,0.1)'},
+                        ticks: {display: false},
+                        border: {display: false},
                         min: -zoomRange + panOffsetY,
                         max: zoomRange + panOffsetY
                     }
