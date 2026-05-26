@@ -54,18 +54,20 @@
         .result-box table th {
             background-color: #f5f5ef;
             color: #000;
-            border: 2px solid black !important;
+            border: 2px solid #f5f5ef !important;
             text-align: center;
             font-weight: bold;
         }
         .result-box table td {
             background-color: #f5f5ef;
             color: #000;
-            border: 2px solid black !important;
+            border: 2px solid #f5f5ef !important;
             text-align: center;
             vertical-align: middle;
             font-size: 1.3rem;
         }
+        .result-box table td:first-child { text-align: right; }
+        .result-box table td:last-child { text-align: left; }
         .result-box .katex { font-size: 1.1em; }
         .chart-container {
             position: relative;
@@ -96,7 +98,7 @@
     body { padding: 10px !important; }
     h1 { font-size: 1.4rem; margin-bottom: 15px; }
     .form-row .form-group { flex-wrap: wrap !important; gap: 6px !important; }
-    .form-row .form-group #funcInput { width: 100% !important; }
+    .form-row .form-group #funcInput { width: auto !important; }
     .form-row .form-group #lowerLimit, .form-row .form-group #upperLimit { width: 60px !important; flex: 1; min-width: 0; }
     .form-row .form-group #calcBtn { width: 100%; }
     .form-row .form-group label { font-size: 1rem !important; }
@@ -104,12 +106,10 @@
     .nav-buttons a { font-size: 1rem !important; padding: 4px 14px !important; }
     .chart-container canvas { max-height: 260px; }
     .result-box { font-size: 0.9rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .result-box div[style*="font-size: 1.8rem"] { font-size: 1.1rem !important; }
     .result-box table td { font-size: 0.85rem !important; padding: 0.3rem; }
     .zoom-btn { width: 28px; height: 28px; font-size: 1rem; }
 }
 @media (max-width: 480px) {
-    .result-box div[style*="font-size: 1.8rem"] { font-size: 0.95rem !important; }
     .chart-container canvas { max-height: 200px; }
     .form-row .form-group #lowerLimit, .form-row .form-group #upperLimit { width: 50px !important; }
 }
@@ -127,8 +127,10 @@
 
     <div class="form-row">
         <div class="form-group col-md-8 offset-md-2" style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px; flex:1;">
             <label style="margin-bottom:0; white-space:nowrap; font-weight:600; font-size:1.2rem;">f(x) =</label>
-            <input type="text" id="funcInput" class="form-control" value="x^3 - 3*x" placeholder="e.g. x^2, sin(x), e^x, x^2 + 3*x + 1">
+            <input type="text" id="funcInput" class="form-control" value="x^3 - 3*x" placeholder="e.g. x^2, sin(x), e^x, x^2 + 3*x + 1" style="flex:1; min-width:100px;">
+            </div>
             <input type="text" id="lowerLimit" class="form-control" placeholder="a" style="width:70px; text-align:center;">
             <input type="text" id="upperLimit" class="form-control" placeholder="b" style="width:70px; text-align:center;">
             <button class="btn btn-success" id="calcBtn" style="white-space:nowrap;">Calculate</button>
@@ -339,7 +341,7 @@ function runCalculation() {
     const upperRaw = document.getElementById('upperLimit').value.trim();
     const hasLimits = lowerRaw !== '' && upperRaw !== '';
 
-    let html = '';
+    let html = '<table class="table table-bordered table-dark" style="margin:15px auto 0; width:auto;"><tbody>';
     if (typeof katex !== 'undefined') {
         if (hasLimits) {
             const lower = Number(lowerRaw);
@@ -349,17 +351,17 @@ function runCalculation() {
                 const valLower = f.evaluate({x: lower});
                 const valUpper = f.evaluate({x: upper});
                 const definite = valUpper - valLower;
-                html += '<div style="text-align:center; font-size:1.8rem; margin-top:15px;">' +
-                        katex.renderToString('\\displaystyle \\int_{' + lowerRaw + '}^{' + upperRaw + '} \\left(' + mathToLatex(expr) + '\\right) \\, dx = ' + definite.toFixed(4), { displayMode: false }) +
-                        '</div>';
+                html += '<tr><td>' +
+                        katex.renderToString('\\displaystyle \\int_{' + lowerRaw + '}^{' + upperRaw + '} \\left(' + mathToLatex(expr) + '\\right) \\, dx =', { displayMode: false }) +
+                        '</td><td>' + definite.toFixed(4) + '</td></tr>';
             } else {
                 hasLimits = false;
             }
         }
         if (!hasLimits) {
-            html += '<div style="text-align:center; font-size:1.8rem; margin-top:15px;">' +
-                    katex.renderToString('\\displaystyle \\int \\left(' + mathToLatex(expr) + '\\right) \\, dx = ' + mathToLatex(resultStr) + ' + C', { displayMode: false }) +
-                    '</div>';
+            html += '<tr><td>' +
+                    katex.renderToString('\\displaystyle \\int \\left(' + mathToLatex(expr) + '\\right) \\, dx =', { displayMode: false }) +
+                    '</td><td>' + katex.renderToString(mathToLatex(resultStr) + ' + C', { displayMode: false }) + '</td></tr>';
         }
     } else {
         if (hasLimits) {
@@ -370,15 +372,16 @@ function runCalculation() {
                 const valLower = f.evaluate({x: lower});
                 const valUpper = f.evaluate({x: upper});
                 const definite = valUpper - valLower;
-                html += '<div style="text-align:center; font-size:1.4rem;">\u222B_' + lowerRaw + '^' + upperRaw + ' ' + expr + ' dx = ' + definite.toFixed(4) + '</div>';
+                html += '<tr><td>\u222B_' + lowerRaw + '^' + upperRaw + ' ' + expr + ' dx =</td><td>' + definite.toFixed(4) + '</td></tr>';
             } else {
                 hasLimits = false;
             }
         }
         if (!hasLimits) {
-            html += '<div style="text-align:center; font-size:1.4rem;">\u222B ' + expr + ' dx = ' + resultStr + ' + C</div>';
+            html += '<tr><td>\u222B ' + expr + ' dx =</td><td>' + resultStr + ' + C</td></tr>';
         }
     }
+    html += '</tbody></table>';
 
     document.getElementById('result').innerHTML = html;
 
